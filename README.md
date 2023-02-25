@@ -12,6 +12,7 @@
 # suDROID
 This script provides a convenient and automated way to patch the boot image of an Android device, saving your time and effort compared to manually patching the image.
 
+THIS SCRIPT WILL USE "Magisk"
 
 The script performs the following steps:
 
