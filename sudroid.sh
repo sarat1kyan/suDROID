@@ -1,5 +1,14 @@
 #!/bin/bash
 
+banner1()
+{
+  echo "+---------------------------------------------------------------------------------------------+"
+  printf "| %-40s |\n" "`date`"
+  echo "|                                                                                             |"
+  printf "|`tput bold` %-40s `tput sgr0`|\n" "$@"
+  echo "+---------------------------------------------------------------------------------------------+"
+}
+
 #clolors
 white='\e[1;37m'
 green='\e[0;32m'
@@ -64,6 +73,7 @@ while true; do
 done
 
 
+
 # Create a new directory called "runing_dir"
 rm -rf patching_process && mkdir patching_process > /dev/null 2>&1
 
@@ -73,9 +83,9 @@ cd patching_process > /dev/null 2>&1
 
 # Check the Linux distribution and install the necessary packages
 
-            echo ""
-echo "now we are checking the Linux distribution and installing the necessary packages"
-            echo ""
+            
+banner1 "now we are checking the Linux distribution and installing the necessary packages"
+            
 
 if command -v apt >/dev/null 2>&1; then
     sudo apt update && sudo apt install -y adb fastboot curl wget unzip zip > /dev/null 2>&1
@@ -88,70 +98,70 @@ elif command -v zypper >/dev/null 2>&1; then
 elif command -v yum >/dev/null 2>&1; then
     sudo yum install -y android-tools curl wget unzip zip > /dev/null 2>&1
 else
-    echo "Unsupported Linux distribution"
+    banner1 "Unsupported Linux distribution"
     exit 1
 fi
 
 # Check for adb and fastboot installation
-echo "checking if adb and fastboot installed"
+banner1 "checking if adb and fastboot installed"
 if ! command -v adb &> /dev/null || ! command -v fastboot &> /dev/null; then
-    echo "adb and fastboot not found. Please make sure they are installed and added to your PATH."
+    banner1 "adb and fastboot not found. Please make sure they are installed and added to your PATH."
     exit 1
 fi
 
 # Connect Android device via USB and check if it's connected
-echo "Please connect your Android device via USB and make sure USB debugging is enabled."
-            echo ""
+banner1 "Please connect your Android device via USB and make sure USB debugging is enabled."
+            
 sleep 45
 adb wait-for-device
 if [ $? -eq 0 ]; then
-  echo "Device connected successfully"
-              echo ""
+  banner1 "Device connected successfully"
+              
 else
-  echo "Device not connected. Please make sure that the USB cable and the device port is working and USB debugging is enabled."
-              echo ""
+  banner1 "Device not connected. Please make sure that the USB cable and the device port is working and USB debugging is enabled."
+              
   exit 1
 fi
 
 # Enable developer options on the Android device
-echo "Enabling developer options..."
-            echo ""
+banner1 "Enabling developer options..."
+            
 adb shell settings put global development_settings_enabled 1 > /dev/null 2>&1
 sleep 20
 
 # Enable USB debugging on the Android device
-echo "Checking and (if needed) Enabling the USB debugging..."
-            echo ""
+banner1 "Checking and (if needed) Enabling the USB debugging..."
+            
 adb shell settings put global adb_enabled 1 > /dev/null 2>&1
 sleep 20
 
 # Reboot the Android device into bootloader mode
-echo "Rebooting into bootloader mode..."
-            echo ""
+banner1 "Rebooting into bootloader mode..."
+            
 adb reboot bootloader > /dev/null 2>&1
 sleep 90
 
 # Download and install Magisk
-   echo "Downloading Magisk..."
-               echo ""
+   banner1 "Downloading Magisk..."
+               
     wget https://github.com/topjohnwu/Magisk/releases/download/v23.0/Magisk-v23.0.zip -O magisk.zip > /dev/null 2>&1
     sleep 20
-    echo "Installing Magisk..."
-                echo ""
+    banner1 "Installing Magisk..."
+                
     unzip -j magisk.zip -d magisk > /dev/null 2>&1
     sleep 20
     rm magisk.zip
    
 
 # Export the boot.img from the connected Android device
-echo "Exporting boot.img from the connected Android device..."
-            echo ""
+banner1 "Exporting boot.img from the connected Android device..."
+            
 adb wait-for-device
 adb shell su -c 'dd if=/dev/block/bootdevice/by-name/boot of=/sdcard/boot.img'
 adb pull /sdcard/boot.img boot.img.bak
 mkdir -p ../"backup_$(date +"%Y%m%d")" && cp ./boot.img.bak ../"backup_$(date +"%Y%m%d")"/boot.img.bak
-echo "Backup of original boot.img created as boot.img.bak"
-            echo ""
+banner1 "Backup of original boot.img created as boot.img.bak"
+            
 
 # Patch boot.img with Magisk
 mv magisk*.img magisk.img && chmod +x magisk.img
@@ -159,31 +169,30 @@ mv magisk*.img magisk.img && chmod +x magisk.img
 sleep 45
 
 # Reboot the Android device into bootloader mode
-echo "Rebooting into bootloader mode..."
-            echo ""
+banner1 "Rebooting into bootloader mode..."
+            
 adb reboot bootloader > /dev/null 2>&1
 sleep 90
 
 # Flash the patched boot image back to the Android device
-echo "Copying the patched boot image back to the Android device..."
-            echo ""
+banner1 "Copying the patched boot image back to the Android device..."
+            
 # Flash patched boot.img to Android device
 fastboot flash boot magisk_patched.img
 sleep 90
 
 # Reboot the Android device
-echo "Rebooting device..."
-            echo ""
+banner1 "Rebooting device..."
+            
 fastboot reboot > /dev/null 2>&1
 
 # Clean up the downloaded files
-echo "Cleaning up..."
-            echo ""
+banner1 "Cleaning up..."
+            
 rm magisk.zip
 cd .. && rm -rf patching_process
 
-echo "Done! If you have any problems contact with me, also you can always recover from your original boot.img that is located in the backup directory."
-            echo ""
-
+banner1 "Done! If you have any problems contact with me, also you can always recover from your original boot.img that is located in the backup directory."
+            
 
 
