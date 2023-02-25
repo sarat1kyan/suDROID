@@ -39,6 +39,7 @@ echo "IMPORTANT NOTICE: Rooting your Android device can be risky"
 echo "and it's important to proceed with caution and follow the necessary steps carefully."
 echo "You also need to make sure that your Android device is connected to your computer via USB"
 echo "and that USB debugging is enabled."
+echo "use this script at your own risk, i'm not responsible for the shit that happened"
 echo "*******************************************************************************************************"
 while true; do
     read -p "If you understand the risks and want to proceed, press Y. Press H for help with enabling USB debugging. Press N to exit. " yn
