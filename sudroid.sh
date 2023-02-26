@@ -1,20 +1,23 @@
 #!/bin/bash
 
+clear
+
+banner1() {
+  local text="$@"
+  local length=$(( ${#text} + 2 ))
+  local line=$(printf '%*s' "$length" '' | tr ' ' '-')
+  echo "+$line+"
+  printf "| %s |\n" "$(date)"
+  echo "+$line+"
+  printf "|$bold%s$reset|\n" "$text"
+  echo "+$line+"
+}
+
 # Check if script is being run as root
 if [[ $EUID -ne 0 ]]; then
-  echo "This script must be run as root."
+  banner1 "This script must be run as root."
   exit 1
 fi
-
-
-banner1()
-{
-  echo "+---------------------------------------------------------------------------------------------+"
-  printf "| %-40s |\n" "$(date)"
-  echo "|                                                                                             |"
-  printf "|$(tput bold) %-40s $(tput sgr0)|\n" "$@"
-  echo "+---------------------------------------------------------------------------------------------+"
-}
 
 #clolors
 white='\e[1;37m'
