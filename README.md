@@ -12,6 +12,9 @@
 # suDROID
 This script provides a convenient and automated way to patch the boot image of an Android device, saving your time and effort compared to manually patching the image.
 
+sudroid.sh for any Linux distribution 
+sudroid.bat for any Windows version
+
 THIS SCRIPT WILL USE "Magisk"
 
 The script performs the following steps:
@@ -31,7 +34,7 @@ HOW TO USE
 3. Navigate to the repo directory
 4. Plug your Android device via USB cable
 5. Take a cup of coffee, tee maybe beer or wine (why not)
-6. Run the script as sudo (sudo ./sudroid.sh)
+6. Run the script as sudo/administrator (sudo ./sudroid.sh) (run as asdimistrator sudroid.bat)
 7. Relax until you get the Done! message.
 8. Unplug your Android device
 9. Enjoy
