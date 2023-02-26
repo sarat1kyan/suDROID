@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Check if script is being run as root
+if [[ $EUID -ne 0 ]]; then
+  echo "This script must be run as root."
+  exit 1
+fi
+
+
 banner1()
 {
   echo "+---------------------------------------------------------------------------------------------+"
@@ -155,36 +162,60 @@ sleep 90
 
 # Export the boot.img from the connected Android device
 banner1 "Exporting boot.img from the connected Android device..."
-            
-adb wait-for-device
-adb shell su -c 'dd if=/dev/block/bootdevice/by-name/boot of=/sdcard/boot.img'
-adb pull /sdcard/boot.img boot.img.bak
-mkdir -p ../"backup_$(date +"%Y%m%d")" && cp ./boot.img.bak ../"backup_$(date +"%Y%m%d")"/boot.img.bak
-banner1 "Backup of original boot.img created as boot.img.bak"
-            
+     
+banner1 "Check if boot.img file exists in any possible directory"
+
+# Search for boot.img file on the device
+boot_img_path="$(adb shell find / -name 'boot.img' 2>/dev/null | tr -d '\r')"
+if [ -z "$boot_img_path" ]; then
+  banner1 "Could not find boot.img file on the device."
+  exit 1
+fi
+
+# Export boot.img file to working directory
+banner1 "Exporting boot.img from device..."
+adb pull "$boot_img_path" >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+  banner1 "Failed to export boot.img. Please provide the path to your boot.img file: "
+  read boot_img_path
+else
+  banner1 "boot.img exported successfully."
+  boot_img_path="./boot.img"
+  
+  banner1 "Backup proccess for the the boot.img was started, so you can roll-back if something shittttyyy happaned"
+  mkdir -p ../"backup_$(date +"%Y%m%d")" && cp ./boot.img ../"backup_$(date +"%Y%m%d")"/boot.img.bak
+  
+fi
 
 # Patch boot.img with Magisk
-mv magisk*.img magisk.img && chmod +x magisk.img
-./magisk --patch ../boot.img.bak
-sleep 45
+banner1 "Patching boot.img with Magisk..."
+magisk --version >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+chmod +x magisk*
+  magisk --boot-image "$boot_img_path" "patched_boot.img" >/dev/null 2>&1
+else
+  banner1 "Magisk not found. Please download and install it manually from https://github.com/topjohnwu/Magisk/releases."
+  exit 1
+fi
 
-# Reboot the Android device into bootloader mode
-banner1 "Rebooting into bootloader mode..."
-            
-adb reboot bootloader > /dev/null 2>&1
-sleep 90
 
-# Flash the patched boot image back to the Android device
-banner1 "Copying the patched boot image back to the Android device..."
-            
-# Flash patched boot.img to Android device
-fastboot flash boot magisk_patched.img
-sleep 90
+# If boot.img is not found, prompt the user to provide it
+if [ -z "$boot_img_path" ]; then
+  read -p "Please provide the path to your boot.img file: " boot_img_path
+fi
 
-# Reboot the Android device
+# Reboot device into fastboot mode
+banner1 "Rebooting device into fastboot mode..."
+adb reboot bootloader >/dev/null 2>&1
+
+# Flash patched boot.img to device
+banner1 "Flashing patched boot.img to device..."
+fastboot flash boot "patched_boot.img" >/dev/null 2>&1
+sleep 20
+
+# Reboot device
 banner1 "Rebooting device..."
-            
-fastboot reboot > /dev/null 2>&1
+fastboot reboot >/dev/null 2>&1
 
 # Clean up the downloaded files
 banner1 "Cleaning up..."
@@ -192,7 +223,6 @@ banner1 "Cleaning up..."
 rm magisk.zip
 cd .. && rm -rf patching_process
 
-banner1 "Done! If you have any problems contact with me, also you can always recover from your original boot.img that is located in the backup directory."
-            
-
-
+banner1 "Done!"
+banner1 "If you have any problems contact with me"
+banner1 "Also you can always recover from your original boot.img that is located in the backup directory (named as boot.img.bak)"
