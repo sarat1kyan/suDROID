@@ -84,7 +84,7 @@ done
 
 
 
-# Create a new directory called "runing_dir"
+# Create a new directory called "patching_process"
 rm -rf patching_process && mkdir patching_process > /dev/null 2>&1
 
 # Move into the newly created directory
@@ -225,6 +225,12 @@ banner1 "Cleaning up..."
             
 rm magisk.zip
 cd .. && rm -rf patching_process
+
+# Clean up installed packages
+if [[ -n "${cleanup_cmd}" ]]; then
+    echo "Removing installed packages..."
+    ${cleanup_cmd}
+fi
 
 banner1 "Done!"
 banner1 "If you have any problems contact with me"
