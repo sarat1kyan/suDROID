@@ -1,6 +1,6 @@
 #!/bin/bash
 
-clear
+echo "here we go..."
 
 banner1() {
   local text="$@"
