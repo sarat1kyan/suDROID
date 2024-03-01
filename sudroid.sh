@@ -104,7 +104,7 @@ sleep 90
 # Download and install Magisk
    echo "Downloading Magisk..."
                
-    wget https://github.com/topjohnwu/Magisk/releases/download/v23.0/Magisk-v23.0.zip -O magisk.zip > /dev/null 2>&1
+    wget https://github.com/topjohnwu/Magisk/releases/tag/v27.0/Magisk-v27.0.zip -O magisk.zip > /dev/null 2>&1
     sleep 20
     echo "Installing Magisk..."
                 
