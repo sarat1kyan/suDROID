@@ -4,6 +4,7 @@
 	|_ -| | |  |  |    -|  |  |-   -|  |  |
 	|___|___|____/|__|__|_____|_____|____/ 
                                        
+read this to save your nerves
 
 # suDROID
 	This script provides a convenient and automated way to patch the boot image of an Android device, saving your time and effort compared to manually patching the image.
