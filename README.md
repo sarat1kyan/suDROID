@@ -70,4 +70,4 @@ Rooting your device may void its warranty, cause data loss, or result in uninten
 
 This project is licensed under the MIT License. See the LICENSE file for details.
 
-Happy Rooting! 🌟
+I welcome contributions and feedback to enhance suDROID and improve the Android rooting experience across platforms.
