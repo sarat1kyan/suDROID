@@ -4,40 +4,70 @@
 	|_ -| | |  |  |    -|  |  |-   -|  |  |
 	|___|___|____/|__|__|_____|_____|____/ 
                                        
-read this to save your nerves
+# suDROID v2.0
 
-# suDROID
-	This script provides a convenient and automated way to patch the boot image of an Android device, saving your time and effort compared to manually patching the image.
+🌌 suDROID
 
-sudroid.sh for any Linux distribution 
-sudroid.bat for any Windows version
+suDROID is a cross-platform solution designed to streamline the rooting process for Android devices on both Linux and Windows. With easy-to-follow instructions and automated tasks, suDROID empowers users to unlock advanced Android capabilities with confidence.
 
-THIS SCRIPT WILL USE "Magisk"
+	Warning: Rooting can be risky! Be sure to understand the implications before proceeding, 
+ 		 and always have a backup of your important data.
 
-	The script performs the following steps:
+🚀 Features
 
-• It checks if the required tools, such as adb and fastboot, are installed on the system. If any tool is missing, the script prompts the user to install it.
-• The script prompts the user to connect the Android device to the computer via USB and ensure that USB debugging is enabled on the device.
-• The script then reboots the device into bootloader mode using adb.
-• It extracts the boot image from the device using adb.
-• The script applies a set of patches to the boot image using the patch tool. These patches include disabling dm-verity, disabling forced encryption, and enabling insecure adb.
-• The patched boot image is then flashed back to the device using fastboot.
-• The device is then rebooted into the system, and the script terminates.
+	•	Cross-Platform Support: Compatible with both Linux (Bash) and Windows (PowerShell).
+	•	Automated Workflow: From dependency installation to device connection, boot image patching, and flashing, suDROID covers the entire rooting process.
+	•	User-Friendly Prompts: Interactive prompts and informative error messages make the process straightforward.
+	•	Logs & Backups: Automatic creation of logs and a backup of the original boot image for safety.
 
-	HOW TO USE
+🛠 Requirements
 
-1. Open a terminal window in Linux.
-2. Download (git clone) this repo
-3. Navigate to the repo directory
-4. Plug your Android device via USB cable
-5. Take a cup of coffee, tee maybe beer or wine (why not)
-6. Run the script as sudo/administrator (sudo ./sudroid.sh) (run as asdimistrator sudroid.bat)
-7. Relax until you get the Done! message.
-8. Unplug your Android device
-9. Enjoy
+Before you begin, make sure you have:
 
-	p.s. if there is any problem while running just remove the banner part ;)
-ONE MORE NOTE!!!!!
+	1.	ADB (Android Debug Bridge) and Fastboot installed and accessible in your system’s PATH. (Script will perform the necessary checks by itself)
+	2.	USB Debugging and OEM Unlocking enabled on your Android device (usually found in Developer Options).
 
-use this script at your own risk
-i'm not responsible for the sh*t that happened
+🔧 Getting Started
+
+Clone the Repository
+
+	git clone https://github.com/yourusername/suDROID.git
+	cd suDROID
+
+Run the Script
+
+On Linux:
+   
+	chmod +x suDROID.sh
+	./suDROID.sh
+
+On Windows:
+   
+	Open PowerShell as Administrator.
+	Navigate to the script’s directory.
+	Run the script:
+	.\suDROID.ps1
+
+Follow the Prompts
+
+The script will guide you through each step, including enabling USB debugging, checking bootloader status, and flashing the patched boot image with Magisk.
+
+📜 Script Details
+
+Linux (Bash) Script: suDROID.sh
+
+The Bash script automates the rooting process for Linux users, using common Linux package managers to install dependencies, check device connectivity, retrieve and patch the boot image, and flash it back onto the device.
+
+Windows (PowerShell) Script: suDROID.ps1
+
+The PowerShell script provides a smooth rooting experience for Windows users by utilizing native commands for dependency management, file handling, and boot image patching with Magisk.
+
+⚠️ Disclaimer
+
+Rooting your device may void its warranty, cause data loss, or result in unintended behavior. suDROID is provided “as-is” without warranty. Proceed at your own risk and ensure you understand each step before executing the script.
+
+📜 License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
+
+Happy Rooting! 🌟
