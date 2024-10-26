@@ -80,7 +80,7 @@ function Check-Device {
             switch ($deviceBrand) {
                 "xiaomi" { Write-Host "${YELLOW}For Xiaomi devices, visit the official Mi Unlock page to download the unlocking tool.${NC}" }
                 "oneplus" { Write-Host "${YELLOW}For OnePlus devices, follow instructions on the official OnePlus support page.${NC}" }
-                "samsung" { Write-Host "${YELLOW}Samsung USA devices typically require a Token; consult support.${NC}" }
+                "samsung" { Write-Host "${YELLOW}Samsung USA devices typically require a Token. I can't help with this. Else If you are in Europe you can unlock it easily, just search online for your device root method${NC}" }
                 "asus" { Write-Host "${YELLOW}ASUS provides an unlock tool; visit the official ASUS support page.${NC}" }
                 "motorola" { Write-Host "${YELLOW}Motorola provides official unlock instructions; visit the Motorola support page.${NC}" }
                 "google" { Write-Host "${YELLOW}Google Pixel devices can typically be unlocked via fastboot; run: fastboot flashing unlock${NC}" }
