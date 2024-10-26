@@ -111,7 +111,7 @@ check_device() {
                 *)
                     chip_vendor=$(adb shell getprop ro.hardware.chipname | tr -d '\r')
                     if [[ "$chip_vendor" == *"mt"* ]]; then
-                        echo -e "${CYAN}Detected MediaTek chipset.${NC} You can try using the ${GREEN}mtkclient${NC} tool for unlocking:https://github.com/bkerler/mtkclient."
+                        echo -e "${CYAN}Detected MediaTek chipset.${NC} You can try using the ${GREEN}mtkclient${NC} tool for unlocking:https://github.com/bkerler/mtkclient"
                     elif [[ "$chip_vendor" == *"unisoc"* ]]; then
                         echo -e "${CYAN}Detected Unisoc chipset.${NC} For Unisoc devices, try using Hovatek's Identifier Token method:https://www.hovatek.com/forum/thread-32287.html, or ${GREEN}CVE-2022-38691${NC} on GitHub:https://github.com/TomKing062/CVE-2022-38694_unlock_bootloader. If you are so lucky to have an engeneeing firmware for the device flash it and then you can flash GSIs without unlocking the bootloader but on A11 and before only"
                     else
