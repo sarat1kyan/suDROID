@@ -87,7 +87,7 @@ function Check-Device {
                 default {
                     $chipVendor = (& adb shell getprop ro.hardware.chipname).Trim()
                     if ($chipVendor -match "mt") {
-                        Write-Host "${CYAN}Detected MediaTek chipset. Try using the mtkclient tool for unlocking.${NC}"
+                        Write-Host "${CYAN}Detected MediaTek chipset. Try using the mtkclient tool for unlocking:https://github.com/bkerler/mtkclient?tab=readme-ov-file#windows${NC}"
                     } elseif ($chipVendor -match "unisoc") {
                         Write-Host "${CYAN}Detected Unisoc chipset. Use Hovatek's Identifier Token method:https://www.hovatek.com/forum/thread-32287.html, or CVE-2022-38691 on GitHub:https://github.com/TomKing062/CVE-2022-38694_unlock_bootloader.${NC}. If you are so lucky to have an engeneeing firmware for the device flash it and then you can flash GSIs without unlocking the bootloader but on A11 and before only"
                     } else {
