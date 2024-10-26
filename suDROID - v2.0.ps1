@@ -1,117 +1,156 @@
-$logfile = "rooting_process_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
-Start-Transcript -Path $logfile
+# Set up logging
+$LogFile = "rooting_process_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+Start-Transcript -Path $LogFile -Append
 
-Write-Host "Starting the Android Rooting Process..." -ForegroundColor Cyan
-Write-Host "================================================================================" -ForegroundColor Blue
+# Define colors for output
+$RED = "`e[31m"
+$GREEN = "`e[32m"
+$YELLOW = "`e[33m"
+$BLUE = "`e[34m"
+$CYAN = "`e[36m"
+$BOLD = "`e[1m"
+$NC = "`e[0m"
 
-Write-Host "
+# Starting message
+Write-Host "${CYAN}${BOLD}Starting the Android Rooting Process... $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')${NC}"
+Write-Host "${BLUE}================================================================================${NC}"
+
+Write-Host @"
+${RED}${BOLD}*******************************************************************************************************
 IMPORTANT NOTICE: Rooting your Android device carries certain risks.
 Make sure you understand the steps involved, proceed with caution, and ensure you have a backup of important data.
 Connect your Android device to your computer via USB and make sure USB debugging is enabled.
-This script is provided 'as-is' without warranty. Use at your own risk.
-" -ForegroundColor Red
+This script is provided "as-is" without warranty. Use at your own risk.
+*******************************************************************************************************${NC}
+"@
 
+# Confirmation prompt
 do {
-    $response = Read-Host "To proceed, type Y. For help enabling USB debugging, type H. To exit, type N"
-    switch ($response.ToUpper()) {
-        'Y' { break }
-        'H' {
-            Write-Host "Please follow these steps to enable USB debugging on your Android device:" -ForegroundColor Cyan
-            Write-Host " 1. Open 'Settings' > 'About Phone' and tap 'Build number' seven times to enable developer options." -ForegroundColor Yellow
-            Write-Host " 2. Return to 'Settings' > 'Developer options' and enable 'USB debugging'." -ForegroundColor Yellow
-            Write-Host " 3. Connect your device to your computer via USB." -ForegroundColor Yellow
+    $userInput = Read-Host "${CYAN}To proceed, type ${GREEN}Y${CYAN}. For help enabling USB debugging, type ${YELLOW}H${CYAN}. To exit, type ${RED}N${CYAN}.${NC}"
+    switch ($userInput.ToUpper()) {
+        "Y" { break }
+        "H" {
+            Write-Host "${CYAN}Follow these steps to enable USB debugging on your Android device:${NC}"
+            Write-Host "${BLUE}1.${NC} Open 'Settings' on your device, go to 'About Phone', and tap 'Build number' seven times to unlock developer options."
+            Write-Host "${BLUE}2.${NC} Go back to 'Settings' and select 'Developer options'."
+            Write-Host "${BLUE}3.${NC} Enable 'USB debugging' and connect your device to your computer via USB."
         }
-        'N' { Exit }
-        default { Write-Host "Invalid input. Please type Y, H, or N." -ForegroundColor Red }
+        "N" { exit }
+        default { Write-Host "${RED}Invalid input. Please type Y, H, or N.${NC}" }
     }
-} until ($response -match '^[Yy]$')
+} until ($userInput -match "^[YyNn]$")
 
+# Error handler
 function Handle-Error {
-    Write-Host "Oops! Something went wrong during the process. Please check the log file for details: $logfile" -ForegroundColor Red
+    Write-Host "${RED}Oops! Something went wrong during the process. Please check the log file for details: $LogFile${NC}"
     Stop-Transcript
-    Exit 1
+    exit 1
 }
 
-Write-Host "Setting up environment for rooting..." -ForegroundColor Yellow
-$patchingPath = Join-Path -Path $PWD -ChildPath "patching_process"
-if (Test-Path -Path $patchingPath) { Remove-Item -Path $patchingPath -Recurse }
-New-Item -ItemType Directory -Path $patchingPath | Out-Null
-Set-Location -Path $patchingPath
+# Environment setup function
+function Setup-Environment {
+    Write-Host "${YELLOW}Setting up environment for rooting...${NC}"
+    if (-not (Test-Path "patching_process")) {
+        New-Item -Path "patching_process" -ItemType Directory
+    }
+    Set-Location -Path "patching_process"
 
-Write-Host "Verifying if adb and fastboot are installed..." -ForegroundColor Green
-$adb = Get-Command "adb.exe" -ErrorAction SilentlyContinue
-$fastboot = Get-Command "fastboot.exe" -ErrorAction SilentlyContinue
-if (-not $adb -or -not $fastboot) {
-    Write-Host "adb or fastboot is not installed or not accessible in the PATH. Please install them before proceeding." -ForegroundColor Red
-    Handle-Error
+    Write-Host "${GREEN}Checking if adb and fastboot are installed...${NC}"
+    if (-not (Get-Command adb -ErrorAction SilentlyContinue)) {
+        Write-Host "${RED}adb not found. Please ensure it is installed and accessible in your PATH.${NC}"
+        exit 1
+    }
+    if (-not (Get-Command fastboot -ErrorAction SilentlyContinue)) {
+        Write-Host "${RED}fastboot not found. Please ensure it is installed and accessible in your PATH.${NC}"
+        exit 1
+    }
 }
 
-Write-Host "Checking device connection and bootloader status..." -ForegroundColor Cyan
-& adb wait-for-device
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Device not connected. Ensure USB debugging is enabled and the device is connected." -ForegroundColor Red
-    Handle-Error
+# Check device connection and bootloader status
+function Check-Device {
+    Write-Host "${CYAN}Checking device connection and bootloader status...${NC}"
+    & adb wait-for-device
+
+    $bootloaderStatus = (& adb shell getprop ro.boot.flash.locked).Trim()
+    if ($bootloaderStatus -eq "1") {
+        Write-Host "${RED}Your device's bootloader is locked.${NC}"
+        $helpUnlock = Read-Host "Do you need help unlocking your bootloader? (y/n)"
+        if ($helpUnlock -match "^[Yy]$") {
+            $deviceBrand = (& adb shell getprop ro.product.brand).Trim()
+            switch ($deviceBrand) {
+                "xiaomi" { Write-Host "${YELLOW}For Xiaomi devices, visit the official Mi Unlock page to download the unlocking tool.${NC}" }
+                "oneplus" { Write-Host "${YELLOW}For OnePlus devices, follow instructions on the official OnePlus support page.${NC}" }
+                "samsung" { Write-Host "${YELLOW}Samsung USA devices typically require a Token; consult support.${NC}" }
+                "asus" { Write-Host "${YELLOW}ASUS provides an unlock tool; visit the official ASUS support page.${NC}" }
+                "motorola" { Write-Host "${YELLOW}Motorola provides official unlock instructions; visit the Motorola support page.${NC}" }
+                "google" { Write-Host "${YELLOW}Google Pixel devices can typically be unlocked via fastboot; run: fastboot flashing unlock${NC}" }
+                default {
+                    $chipVendor = (& adb shell getprop ro.hardware.chipname).Trim()
+                    if ($chipVendor -match "mt") {
+                        Write-Host "${CYAN}Detected MediaTek chipset. Try using the mtkclient tool for unlocking.${NC}"
+                    } elseif ($chipVendor -match "unisoc") {
+                        Write-Host "${CYAN}Detected Unisoc chipset. Use Hovatek's Identifier Token method, or search for CVE-2022-38691 on GitHub.${NC}"
+                    } else {
+                        Write-Host "${YELLOW}For other brands or chipsets, refer to official support, or search for device-specific unlock guides.${NC}"
+                    }
+                }
+            }
+            exit 1
+        } else {
+            Write-Host "${RED}Bootloader must be unlocked before proceeding. Exiting.${NC}"
+            exit 1
+        }
+    } else {
+        Write-Host "${GREEN}Device connected successfully and bootloader is unlocked.${NC}"
+    }
 }
 
-$bootloaderStatus = & adb shell getprop ro.boot.flash.locked | Out-String
-$bootloaderStatus = $bootloaderStatus.Trim()
-if ($bootloaderStatus -eq "1") {
-    Write-Host "Your device's bootloader is locked. Please unlock it before proceeding with this script." -ForegroundColor Red
-    Handle-Error
-}
-Write-Host "Device connected successfully and bootloader is unlocked." -ForegroundColor Green
-
-$magiskVersion = "v27.0"
-$magiskURL = "https://github.com/topjohnwu/Magisk/releases/download/${magiskVersion}/Magisk-${magiskVersion}.zip"
-$magiskFile = "magisk.zip"
-
-Write-Host "Downloading Magisk version $magiskVersion..." -ForegroundColor Cyan
-Invoke-WebRequest -Uri $magiskURL -OutFile $magiskFile -UseBasicParsing
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Failed to download Magisk. Please check your internet connection." -ForegroundColor Red
-    Handle-Error
+# Flash patched boot image function
+function Flash-PatchedImage {
+    Write-Host "${CYAN}Copy the patched boot image to /storage/emulated/0/Download and rename it to boot.img.${NC}"
+    Write-Host "${CYAN}Rebooting device to fastboot and flashing the patched boot image...${NC}"
+    & adb reboot bootloader
+    Start-Sleep -Seconds 15
+    & fastboot flash boot boot.img
+    Start-Sleep -Seconds 10
+    & fastboot reboot
 }
 
-Write-Host "Extracting Magisk files..." -ForegroundColor Cyan
-Expand-Archive -Path $magiskFile -DestinationPath magisk -Force
-Remove-Item -Path $magiskFile
+# Root method selection
+Write-Host "${GREEN}Choose your root method:${NC}"
+Write-Host "${GREEN}1. Magisk${NC}"
+Write-Host "${GREEN}2. Apatch${NC}"
+Write-Host "${GREEN}3. KernelSU${NC}"
+$rootMethodChoice = Read-Host "Enter the number of your choice"
 
-Write-Host "Preparing to retrieve and back up the device's boot image..." -ForegroundColor Cyan
-$bootImgPath = & adb shell find / -name 'boot.img' 2>$null | Out-String
-$bootImgPath = $bootImgPath.Trim()
-if (-not $bootImgPath) {
-    $bootImgPath = Read-Host "Could not locate boot.img automatically. Please provide the path manually"
+switch ($rootMethodChoice) {
+    1 {
+        Write-Host "${CYAN}You selected Magisk.${NC}"
+        Write-Host "${YELLOW}Install the Magisk app, extract the boot image from your stock firmware, and follow in-app instructions to patch it.${NC}"
+        Read-Host -Prompt "Press Enter when ready"
+        Flash-PatchedImage
+    }
+    2 {
+        Write-Host "${CYAN}You selected Apatch.${NC}"
+        Write-Host "${YELLOW}Install the Apatch app, extract the boot image from your stock firmware, and follow in-app instructions to patch it.${NC}"
+        Read-Host -Prompt "Press Enter when ready"
+        Flash-PatchedImage
+    }
+    3 {
+        Write-Host "${CYAN}You selected KernelSU.${NC}"
+        Write-Host "${YELLOW}Download the appropriate KernelSU-patched boot image, and flash it using TWRP or fastboot.${NC}"
+        Write-Host "${GREEN}1. From TWRP: flash the boot image directly."
+        Write-Host "${GREEN}2. Via fastboot: Run 'adb reboot bootloader' and then 'fastboot flash boot boot.img'."
+        Read-Host -Prompt "Press Enter when ready"
+        Flash-PatchedImage
+    }
+    default {
+        Write-Host "${RED}Invalid selection. Exiting.${NC}"
+        exit 1
+    }
 }
 
-& adb pull $bootImgPath
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Failed to retrieve boot.img from the device." -ForegroundColor Red
-    Handle-Error
-}
-
-$backupPath = Join-Path -Path $PWD -ChildPath "backup_$(Get-Date -Format 'yyyyMMdd')"
-New-Item -ItemType Directory -Path $backupPath | Out-Null
-Copy-Item -Path "boot.img" -Destination "$backupPath\boot.img.bak"
-
-Write-Host "Patching boot image with Magisk..." -ForegroundColor Cyan
-$magiskFile = Get-ChildItem -Path "magisk" -Filter "magisk*"
-& $magiskFile.FullName --boot-image boot.img patched_boot.img
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Failed to patch boot image with Magisk." -ForegroundColor Red
-    Handle-Error
-}
-
-Write-Host "Rebooting device to fastboot and flashing the patched boot image..." -ForegroundColor Cyan
-& adb reboot bootloader
-Start-Sleep -Seconds 15
-& fastboot flash boot patched_boot.img
-Start-Sleep -Seconds 10
-& fastboot reboot
-
-Write-Host "Cleaning up temporary files and directories..." -ForegroundColor Yellow
-Set-Location -Path $PWD
-Remove-Item -Path $patchingPath -Recurse
-
-Write-Host "Rooting process completed successfully! A backup of your original boot image is saved in the backup folder for recovery." -ForegroundColor Green
-
+# Execution of main functions
+Setup-Environment
+Check-Device
 Stop-Transcript
