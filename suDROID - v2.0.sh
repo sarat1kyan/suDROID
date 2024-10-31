@@ -1,6 +1,4 @@
 #!/bin/bash
-
-
 LOGFILE="rooting_process_$(date +"%Y%m%d_%H%M%S").log"
 exec > >(tee -a "$LOGFILE") 2>&1
 exec 2>&1
@@ -85,62 +83,98 @@ check_device() {
     
     bootloader_status=$(adb shell getprop ro.boot.flash.locked | tr -d '\r')
     if [ "$bootloader_status" = "1" ]; then
-        echo -e "${RED}Your device's bootloader is locked. Please unlock it before proceeding with this script.${NC}"
-        exit 1
+        echo -e "${RED}Your device's bootloader is locked.${NC}"
+        read -p "Do you need help unlocking your bootloader? (y/n): " help_unlock
+        if [[ "$help_unlock" =~ ^[Yy]$ ]]; then
+            device_brand=$(adb shell getprop ro.product.brand | tr -d '\r')
+            device_model=$(adb shell getprop ro.product.model | tr -d '\r')
+            
+            case "$device_brand" in
+                "xiaomi"|"redmi")
+                    echo -e "${YELLOW}For Xiaomi devices, visit the official Mi Unlock page to download the unlocking tool.${NC}"
+                    ;;
+                "oneplus")
+                    echo -e "${YELLOW}For OnePlus devices, follow instructions on the official OnePlus support page to unlock your bootloader.${NC}"
+                    ;;
+                "samsung")
+                    echo -e "${YELLOW}Samsung USA devices typically require a Token. I can't help with this. Else If you are in Europe you can unlock it easily, just search online for your device root method${NC}"
+                    ;;
+                "asus")
+                    echo -e "${YELLOW}ASUS provides an unlock tool; visit the official ASUS support page.${NC}"
+                    ;;
+                "motorola")
+                    echo -e "${YELLOW}Motorola provides official unlock instructions; visit the Motorola support page.${NC}"
+                    ;;
+                "google")
+                    echo -e "${YELLOW}Google Pixel devices can typically be unlocked via fastboot; run:\n fastboot flashing unlock${NC}"
+                    ;;
+                *)
+                    chip_vendor=$(adb shell getprop ro.hardware.chipname | tr -d '\r')
+                    if [[ "$chip_vendor" == *"mt"* ]]; then
+                        echo -e "${CYAN}Detected MediaTek chipset.${NC} You can try using the ${GREEN}mtkclient${NC} tool for unlocking:https://github.com/bkerler/mtkclient"
+                    elif [[ "$chip_vendor" == *"unisoc"* ]]; then
+                        echo -e "${CYAN}Detected Unisoc chipset.${NC} For Unisoc devices, try using Hovatek's Identifier Token method:https://www.hovatek.com/forum/thread-32287.html, or ${GREEN}CVE-2022-38691${NC} on GitHub:https://github.com/TomKing062/CVE-2022-38694_unlock_bootloader. If you are so lucky to have an engeneeing firmware for the device flash it and then you can flash GSIs without unlocking the bootloader but on A11 and before only, more info:https://adshnk.com/Jd4w9l"
+                    else
+                        echo -e "${YELLOW}For other brands or chipsets, please refer to official support, or search for device-specific unlock guides online.${NC}"
+                    fi
+                    ;;
+            esac
+            exit 1
+        else
+            echo -e "${RED}Bootloader must be unlocked before proceeding. Exiting.${NC}"
+            exit 1
+        fi
+    else
+        echo -e "${GREEN}Device connected successfully and bootloader is unlocked.${NC}"
     fi
-
-    echo -e "${GREEN}Device connected successfully and bootloader is unlocked.${NC}"
-}
-
-download_magisk() {
-    MAGISK_VERSION="v27.0"
-    MAGISK_URL="https://github.com/topjohnwu/Magisk/releases/download/${MAGISK_VERSION}/Magisk-${MAGISK_VERSION}.zip"
-    MAGISK_FILE="magisk.zip"
-    
-    echo -e "${CYAN}Downloading Magisk version $MAGISK_VERSION...${NC}"
-    wget -q "$MAGISK_URL" -O "$MAGISK_FILE" || { echo -e "${RED}Failed to download Magisk. Please check your internet connection.${NC}"; exit 1; }
-    
-    echo -e "${CYAN}Extracting Magisk files...${NC}"
-    unzip -j "$MAGISK_FILE" -d magisk && rm "$MAGISK_FILE"
-}
-
-patch_boot_image() {
-    echo -e "${CYAN}Preparing to retrieve and back up the device's boot image...${NC}"
-    boot_img_path="$(adb shell find / -name 'boot.img' 2>/dev/null | tr -d '\r')"
-    if [ -z "$boot_img_path" ]; then
-        read -p "Could not locate boot.img automatically. Please provide the path manually: " boot_img_path
-    fi
-    
-    adb pull "$boot_img_path" || { echo -e "${RED}Failed to retrieve boot.img from the device.${NC}"; exit 1; }
-    mkdir -p "../backup_$(date +"%Y%m%d")" && cp boot.img "../backup_$(date +"%Y%m%d")/boot.img.bak"
-    
-    echo -e "${CYAN}Patching boot image with Magisk...${NC}"
-    chmod +x magisk/*
-    magisk_file=$(find magisk -name 'magisk*')
-    $magisk_file --boot-image boot.img patched_boot.img || { echo -e "${RED}Failed to patch boot image with Magisk.${NC}"; exit 1; }
 }
 
 flash_patched_image() {
+    echo -e "${CYAN}Copy the patched boot image on /storage/emulated/0/Download to the script folder and rename it as boot.img.${NC}"
     echo -e "${CYAN}Rebooting device to fastboot and flashing the patched boot image...${NC}"
     adb reboot bootloader && sleep 15
-    fastboot flash boot patched_boot.img && sleep 10
+    fastboot flash boot boot.img && sleep 10
     fastboot reboot
 }
 
-cleanup() {
-    echo -e "${YELLOW}Removing temporary files and directories...${NC}"
-    cd .. && rm -rf patching_process
-    echo -e "${GREEN}Rooting process completed successfully!${NC} ${CYAN}A backup of your original boot image is saved in the backup folder for recovery.${NC}"
-}
+echo -e "${GREEN}Choose your root method:${NC}"
+echo -e "${GREEN}1. Magisk${NC}"
+echo -e "${GREEN}2. Apatch${NC}"
+echo -e "${GREEN}3. KernelSU${NC}"
+read -p "Enter the number of your choice: " root_method_choice
 
-main() {
-    setup_environment
-    check_adb_fastboot
-    check_device
-    download_magisk
-    patch_boot_image
+case $root_method_choice in
+    1) 
+    echo -e "${CYAN}You selected Magisk.${NC}"
+    echo -e "${YELLOW}To use Magisk, install the Magisk app, extract the boot image from your device stock firmware (if possible it must be the same version as your device software, else full flash it), copy it to the device and follow the in-app instructions to patch your boot image.${NC}"
+    read -p "press enter when ready"
     flash_patched_image
-    cleanup
-}
+    ;;
 
-main
+2) 
+    echo -e "${CYAN}You selected Apatch.${NC}"
+    echo -e "${YELLOW}To use Apatch, install the Apatch app, extract the boot image from your device stock firmware (if possible it must be the same version as your device software, else full flash it), copy it to the device and follow the in-app instructions to patch your boot image.${NC}"
+    read -p "press enter when ready"
+    flash_patched_image
+    ;;
+
+3) 
+    echo -e "${CYAN}You selected KernelSU.${NC}"
+    echo -e "${YELLOW}To root with KernelSU, download the appropriate KernelSU-patched boot image for your device.${NC}"
+    echo -e "Then, you can flash it using one of these methods:"
+    echo -e "  ${GREEN}- From TWRP: flash the boot image directly.${NC}"
+    echo -e "  ${GREEN}- Via fastboot:${NC}"
+    echo -e "    1. Reboot to bootloader: ${BOLD}adb reboot bootloader${NC}"
+    echo -e "    2. Flash the image: ${BOLD}fastboot flash boot boot.img${NC}"
+    read -p "press enter when ready"
+    flash_patched_image
+    ;;
+    *) 
+        echo -e "${RED}Invalid selection. Exiting.${NC}"
+        exit 1
+        ;;
+esac
+
+setup_environment
+check_adb_fastboot
+check_device
