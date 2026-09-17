@@ -53,6 +53,7 @@ class FakeDevice:
         byname: str = "boot_a boot_b",
         battery: int = 80,
         rooted_after_boot: bool = True,
+        kernel: str = "5.4.233-qgki-g1234567",
     ) -> None:
         self.serial = serial
         self.mode = "android"
@@ -78,6 +79,7 @@ class FakeDevice:
         fk.on_prefix(("adb", "-s", s, "shell", "ls /dev/block/by-name"), byname)
         fk.on_prefix(("adb", "-s", s, "shell", "command -v"), "no")
         fk.on(("adb", "-s", s, "shell", "dumpsys battery"), f"  level: {battery}\n")
+        fk.on(("adb", "-s", s, "shell", "uname -r"), kernel)
         fk.on(("adb", "-s", s, "reboot", "bootloader"), self._reboot_bl)
         fk.on(("adb", "-s", s, "wait-for-device"), "")
         fk.on(("adb", "-s", s, "shell", "getprop sys.boot_completed"), "1")
