@@ -1,237 +1,253 @@
-	                                       
-	         ____  _____ _____ _____ ____  
-	 ___ _ _|    \| __  |     |     |    \ 
-	|_ -| | |  |  |    -|  |  |-   -|  |  |
-	|___|___|____/|__|__|_____|_____|____/ 
-                                       
-# suDROID v2.0
-
-🌌 suDROID
-
-suDROID is a cross-platform solution designed to streamline the rooting process for Android devices on both Linux and Windows. With easy-to-follow instructions and automated tasks, suDROID empowers users to unlock advanced Android capabilities with confidence.
-
-	Warning: Rooting can be risky! Be sure to understand the implications before proceeding, 
- 		 and always have a backup of your important data.
-
-📄 Changelog and Release Notes
-Version 2.1.1 - October 31, 2024
-🔥 Major Features and Enhancements
-
-    Dynamic Device Detection and Compatibility Check
-        Automatically detects device model and Android version for compatibility verification. Provides specific guidance for supported models (e.g., Google Pixel, Samsung Galaxy, OnePlus).
-
-    Automatic Magisk Version Update
-        Fetches the latest Magisk version dynamically from the GitHub API, ensuring you’re always up-to-date with the latest release. Configurable fallback to a default version if updates are not available.
-
-    Interactive Mode for Customizable Rooting Steps
-        New interactive menu allows users to select each stage of the rooting process individually. This makes it possible to skip, repeat, or inspect each step at your convenience.
-
-    Automatic Bootloader Unlock
-        Detects if the bootloader is locked and, if so, attempts to unlock it automatically. If the unlock attempt fails, the script provides detailed manual instructions.
-
-    Full Device and Settings Backup
-        Allows a comprehensive backup of all user data (apps, settings, media) and system settings to a secure backup directory before starting the rooting process. Restores settings seamlessly after rooting to preserve your device's original configuration.
-
-    Advanced Root Verification
-        Conducts an extensive root verification, checking for the su binary and other root files. Confirms root access by executing root-level commands and reports if rooting was successful.
-
-    Retry Mechanisms for Stability
-        Adds a retry mechanism for critical tasks such as internet connectivity checks, battery level checks, ADB/fastboot operations, and file downloads. Ensures stability in cases of intermittent network or device connection issues.
-
-    Custom Config File Support
-        Includes a configuration file (root_config.cfg) that allows users to pre-define settings such as Magisk version, retry limits, and verbosity, making the script customizable for both advanced and basic users.
-
-    Safety Mode with Rollback Options
-        Introduces a Safety Mode that backs up critical files at each step, allowing for a quick rollback in the event of errors during the rooting process.
-
-    Post-Root Recovery Options
-        Offers the option to install a custom recovery (e.g., TWRP) after rooting, providing advanced device management tools for rooted devices.
-
-📈 Optimizations and Improvements
-
-    Streamlined Setup and Dependency Management
-        Enhanced compatibility for Linux distributions (Debian, Fedora, Arch, OpenSUSE). Automatically detects and installs necessary dependencies, streamlining the setup for each environment.
-
-    Enhanced Logging and Detailed Error Reporting
-        Logs are now enriched with timestamped error messages and troubleshooting suggestions for each critical failure point. Logs device state information, making it easy to track down issues and ensure a smooth rooting process.
-
-    Improved Interactive Prompts and User Guidance
-        Updated prompts with color-coded messages and step-by-step instructions, guiding users through the rooting process and offering a preview of each action before execution.
-
-    Automatic Cleanup and Organization
-        Cleans up temporary files and directories upon completion, organizing backups and logs into designated folders for easier management and faster access.
-
-🛠️ Bug Fixes
-
-    Resolved ADB and Fastboot Detection Issues
-        Ensures consistent detection and accessibility of ADB and Fastboot binaries, improving reliability across various Linux environments.
-
-    Fixed Battery Level Detection for Low-Level Devices
-        Enhanced battery detection mechanism to handle edge cases on low-battery or low-power devices, ensuring sufficient power for the rooting process.
-
-📝 How to Use
-
-    Clone or Download the Repository
-        Ensure you have adb, fastboot, curl, wget, unzip, and jq installed. Use ./root_config.cfg to set up preferred configurations.
-
-    Run the Script
-        Start with bash root_script.sh and follow the interactive menu to proceed with the rooting steps. Choose steps individually or proceed with a complete automated run.
-
-    Backup Data and Settings
-        It’s recommended to use the built-in backup feature before rooting to ensure data is safe and recoverable.
-
-    Post-Root Options
-        After verifying root access, the script offers the option to install custom recovery (e.g., TWRP) for advanced system management.
-
-⚠️ Important Notes
-
-    Device Compatibility: The script has been tested on Pixel, Samsung Galaxy, Xiaomi, Nokia, Sony Xperia, LG and OnePlus devices. For unsupported devices, the script provides general instructions but may require manual adjustments.
-    
-    The script has been tested and optimized for the following devices:
-
-    Google Pixel Series
-        Pixel 4a
-        Pixel 5
-        Pixel 6
-        Pixel 6 Pro
-
-    Samsung Galaxy Series
-        Galaxy S10
-        Galaxy S20
-	Galaxy Note 10 and Note 20
-        Galaxy S21
-	Galaxy S22
- 	Galaxy S23
-  	Galaxy S24
- 	(Exynos versions recommended due to compatibility with bootloader unlocking)
-
-    OnePlus Series
-        OnePlus 6, 6T
-        OnePlus 7, 7 Pro
-        OnePlus 8, 8 Pro
-        OnePlus 9, 9 Pro
-
-    Xiaomi Mi Series
-        Mi 9
-        Mi 10
-        Mi 11
-	
-    Xiaomi Series
-        13
-        14
-
-    Other Devices
-        Sony Xperia (Xperia XZ2, Xperia XZ3)
-        Motorola (Moto G7, Moto G8)
-        LG (G7 ThinQ, V40 ThinQ)
-	
-    Battery Requirements: Ensure your device is charged to at least 50% before beginning the process.
-    Rooting Disclaimer: Rooting may void your device warranty. Ensure you fully understand the risks involved.
-
-🚀 Ready to Root?
-
-This version is built for flexibility, security, and stability, offering a fully automated yet customizable rooting experience for advanced users and beginners alike. Get started, and unlock the full potential of your Android device!
-
-🚀 Features
-
-	•	Cross-Platform Support: Compatible with both Linux (Bash) and Windows (PowerShell).
-	•	Automated Workflow: From dependency installation to device connection, boot image patching, and flashing, suDROID covers the entire rooting process.
-	•	User-Friendly Prompts: Interactive prompts and informative error messages make the process straightforward.
-	•	Logs & Backups: Automatic creation of logs and a backup of the original boot image for safety.
-
-🛠 Requirements
-
-Before you begin, make sure you have:
-
-	1.	ADB (Android Debug Bridge) and Fastboot installed and accessible in your system’s PATH. (Script will perform the necessary checks by itself)
-	2.	USB Debugging and OEM Unlocking enabled on your Android device (usually found in Developer Options).
-
-🔧 Getting Started
-
-Clone the Repository
-
-	git clone https://github.com/yourusername/suDROID.git
-	cd suDROID
-
-Run the Script
-
-On Linux:
-   
-	chmod +x suDROID2.1.sh
-	./suDROID2.1.sh
-
-On Windows:
-   
-	Open PowerShell as Administrator.
-	Navigate to the script’s directory.
-	Run the script:
-	.\suDROID.ps1
-
-Follow the Prompts
-
-The script will guide you through each step, including enabling USB debugging, checking bootloader status, and flashing the patched boot image with Magisk.
-
-📜 Script Details
-
-Linux (Bash) Script: suDROID2.1.sh
-
-The Bash script automates the rooting process for Linux users, using common Linux package managers to install dependencies, check device connectivity, retrieve and patch the boot image, and flash it back onto the device.
-
-Windows (PowerShell) Script: suDROID.ps1
-
-The PowerShell script provides a smooth rooting experience for Windows users by utilizing native commands for dependency management, file handling, and boot image patching with Magisk.
-
-⚠️ Disclaimer
-
-Rooting your device may void its warranty, cause data loss, or result in unintended behavior. suDROID is provided “as-is” without warranty. Proceed at your own risk and ensure you understand each step before executing the script.
-
-ChatGPT
-🚀 Planned Future Updates
-
-To enhance the functionality, compatibility, and user experience of the rooting script, the following updates are being planned:
-🔧 Extended Device Compatibility
-
-    Expanded Device Support: Broaden compatibility for additional manufacturers and models, especially newer devices from brands like Google, Samsung, Xiaomi, Motorola, and OnePlus.
-    Amazon Fire (just think anout it)
-    Automated Device Profiles: Add device-specific profiles to streamline the rooting process based on detected model and firmware. This will offer device-tailored instructions, especially for Samsung and Xiaomi devices where rooting methods vary.
-
-📦 Comprehensive Backup and Restore Enhancements
-
-    Selective Backup Options: Provide options for partial backups, such as only apps, media files, or system settings. Users will be able to select which data to back up and restore.
-    Cloud Backup Support: Integrate options for uploading backups to cloud services (e.g., Google Drive) for safe storage and easy retrieval.
-
-🌐 Device Information and Diagnostic Tools
-
-    Detailed System Info Report: Generate a complete system report (including CPU, GPU, memory, storage, and current firmware) to assess compatibility.
-    Real-Time Diagnostics: Implement real-time monitoring of battery, CPU temperature, and system performance during the rooting process to prevent overheating or sudden shutdowns.
-
-🔒 Enhanced Security and Safety Features
-
-    Automatic Safety Mode: Introduce a Safety Mode that checks essential conditions (battery level, bootloader status, backup completion) before initiating the root process. If any condition fails, the process will halt automatically.
-    Encryption Check: Identify if the device’s data partition is encrypted and notify the user if decryption is needed, preventing issues during or after rooting.
-
-🔄 Automated Root Recovery and Troubleshooting
-
-    Root Recovery Mode: Add a Root Recovery Mode that re-applies root access if it becomes lost or broken after a system update.
-    Enhanced Error Logging: Expand error logging to include specific troubleshooting suggestions based on common failure points, making it easier for users to resolve issues.
-
-🧩 Custom Recovery Installation and Management
-
-    TWRP Installation Option: Provide an option to automatically install the latest compatible version of TWRP or other custom recoveries based on the detected device model.
-    Recovery Mode Features: Add options for custom backups, system wipes, and advanced recovery tools within the TWRP environment.
-
-⚙️ User Interface and Experience Enhancements
-
-    Guided Setup Wizard: Include a setup wizard that walks users through configuring key options, such as backup preferences, root verification, and Safety Mode settings.
-    GUI Version: Develop a basic GUI interface for Linux (using Zenity or similar tools) to simplify the rooting process, making it accessible for non-technical users.
-
-🆕 Additional Root Utilities and Tools
-
-    Post-Root Utility Installations: Offer optional installations of popular root utilities like BusyBox, terminal emulators, and root file explorers.
-    System Tweaks and Performance Optimization: Provide options to apply common performance tweaks, such as adjusting CPU governors, disabling system bloatware, or optimizing battery management.
-
-📜 License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
-
-I welcome contributions and feedback to enhance suDROID and improve the Android rooting experience across platforms.
+<div align="center">
+
+```
+         ____  _____ _____ _____ ____
+ ___ _ _|    \| __  |     |     |    \
+|_ -| | |  |  |    -|  |  |-   -|  |  |
+|___|___|____/|__|__|_____|_____|____/
+```
+
+**Root Android from your terminal. Detect, back up, patch, test boot, flash, verify.**
+
+[![ci](https://github.com/sarat1kyan/suDROID/actions/workflows/ci.yml/badge.svg)](https://github.com/sarat1kyan/suDROID/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/sarat1kyan/suDROID?display_name=tag&sort=semver)](https://github.com/sarat1kyan/suDROID/releases)
+[![python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-3776AB)](pyproject.toml)
+[![platforms](https://img.shields.io/badge/host-linux%20%7C%20macos%20%7C%20windows-informational)](#install)
+[![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+</div>
+
+---
+
+suDROID is a cross platform CLI that takes an Android phone from stock to rooted with the least
+amount of guesswork. It reads the device, picks the right partition and slot, patches with the
+exact Magisk build it installs, boots the result from RAM before writing anything, and keeps a
+stock backup so it can undo itself.
+
+```
+$ sudroid root --firmware panther-up1a.231105.003-factory-33cc44dd.zip
+
+ Device
+ Model             google Pixel 7
+ Codename          panther
+ Android           14 (SDK 34, first API 33)
+ Build             UP1A.231105.003
+ SoC               tensor Tensor G2
+ Kernel            5.10.198-android13-4-00050-g12ab34cd
+ A/B               yes, slot a
+ Patch target      init_boot
+ Bootloader        unlocked
+ Root present      none
+ Battery           82%
+
+ Plan
+  #  Step                                       Writes  State
+  1  Check host tools
+  2  Check battery
+  3  Check bootloader unlocked
+  4  Acquire stock init_boot image
+  5  Back up stock image
+  6  Fetch Magisk
+  7  Patch image on device                       yes
+  8  Test boot patched image (no write)          yes    skip: init_boot images cannot be test-booted
+  9  Flash patched image to init_boot_a          yes
+ 10  Wait for Android
+ 11  Install Magisk app                          yes
+ 12  Verify root
+
+Start rooting? [y/N] y
+...
+root verified magisk 28.1:MAGISK
+done. session 20260917-181203-4f1a2c
+```
+
+## Why v3
+
+The v2 shell scripts patched on the wrong machine, ignored A/B slots and `init_boot`, unlocked
+bootloaders without asking, and claimed Samsung support without a Samsung flashing path.
+v3 is a rewrite around one idea: **the device tells the tool what to do, not a fixed step list.**
+
+| | v2 scripts | v3 |
+|---|---|---|
+| Hosts | Linux bash, Windows PowerShell (diverged) | one Python codebase, Linux, macOS, Windows, single file binaries |
+| Partition | always `boot` | `boot` or `init_boot` from the partition table, slot aware |
+| Patching | ran Android binaries on the host | Magisk's own `boot_patch.sh` on the device, always the same build that gets installed |
+| Before writing | nothing | `fastboot boot` test run, root check over adb, then flash |
+| Samsung | not possible | AP tar in, Heimdall or Odin tar out, vbmeta handled |
+| Unlock | silent `fastboot oem unlock` | vendor specific flow, typed confirmation, backup required |
+| Recovery | none | stock backup with manifest, `sudroid restore`, undo on failure, `--resume` |
+| Tests | none | 190+ tests, fake device state machine, CI on 3 OS x 4 Python |
+
+## Install
+
+```
+pipx install sudroid          # or: pip install sudroid
+sudroid doctor                # checks adb, fastboot, heimdall, drivers; downloads platform-tools if missing
+```
+
+Single file binaries for Linux (x86_64, arm64), macOS (x86_64, arm64) and Windows are on the
+[releases page](https://github.com/sarat1kyan/suDROID/releases). No Python needed.
+
+On the phone: Developer options, enable **USB debugging** and **OEM unlocking**.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `sudroid doctor` | host tools, adb server, udev rules, driver hints |
+| `sudroid info` | full device report, `--json` for scripts |
+| `sudroid unlock` | bootloader unlock, automated where the vendor allows, guided otherwise |
+| `sudroid backup` | save a stock image for this device, `--list` to see them |
+| `sudroid root` | the whole pipeline, `--method magisk`, `kernelsu` or `apatch` |
+| `sudroid patch IMAGE` | patch with Magisk on the device, flash nothing |
+| `sudroid flash IMAGE` | flash any image to the right partition and slot, `--test-boot` first |
+| `sudroid verify` | is root working, which solution |
+| `sudroid restore` | flash the saved stock image back |
+| `sudroid profiles` | vendor support matrix |
+| `sudroid config` | effective config, `--init` writes the file |
+
+Global flags: `--dry-run` (every device write is printed, none executed), `--yes`, `--serial`,
+`--json`, `--log-level`, `--config`, `--no-color`.
+
+## Getting the stock image
+
+Magisk patches the stock `boot.img` or `init_boot.img` of the **installed build**. suDROID
+extracts it for you from whatever the vendor ships:
+
+| Source | Flag | Vendors |
+|---|---|---|
+| Google factory image, fetched and sha256 checked | `--auto-fetch` | Pixel |
+| Factory zip | `--firmware x.zip` | Pixel |
+| Full OTA zip (`payload.bin`, parsed in place, only needed partitions extracted) | `--firmware ota.zip` | OnePlus, Nothing, Pixel, most GKI devices |
+| Raw `payload.bin` | `--firmware payload.bin` | any |
+| Samsung AP tar (`.tar.md5`, lz4 entries) | `--firmware AP_xxx.tar.md5` | Samsung |
+| Extracted image | `--image boot.img` | any |
+| Already rooted device | nothing, pulled with `dd` | any |
+
+Incremental OTAs are detected and rejected with a message instead of producing a broken image.
+
+## Root methods
+
+**Magisk (default).** The APK's `boot_patch.sh` and native binaries for the device ABI are pushed
+to `/data/local/tmp` and run over adb. The patched image is pulled back, sanity checked, test
+booted with `fastboot boot` when the target is `boot`, then flashed to the active slot. The same
+APK is installed as the manager.
+
+**KernelSU.** `uname -r` gives the KMI (for example `android12-5.10`). The matching prebuilt GKI
+boot image from the latest KernelSU release is downloaded, test booted and flashed to `boot`,
+then the manager is installed. Non GKI kernels get manual steps.
+
+**APatch.** The manager is installed and the stock image copied to `Download/`. Patch in the app,
+then `sudroid flash apatch_patched.img --partition boot --test-boot`.
+
+## Samsung
+
+```
+sudroid root --firmware AP_G991BXXU5DVJB_CL25260648_QB58521306_REV00_user_low_ship_MULTI_CERT_meta_OS13.tar.md5
+sudroid root --firmware AP_....tar.md5 --odin      # no Heimdall: writes magisk_patched.tar.md5 for Odin
+```
+
+`boot.img` or `init_boot.img` and `vbmeta.img` are pulled from the AP tar, the boot image is
+patched on the device, vbmeta gets the verification and hashtree disabled flags (the same edit the
+Magisk app makes), the phone is rebooted to download mode with `adb reboot download`, partition
+names are checked against the PIT and flashed with Heimdall. Without Heimdall the tool writes a
+raw image AP tar with the md5 trailer and prints the Odin steps.
+
+Knox trips permanently. US carrier models cannot unlock; the tool detects them and refuses.
+
+## Safety model
+
+- Every device write goes through one code path that is logged, confirmable, dry-runnable and
+  undoable. `--dry-run` runs all read steps and prints the exact commands it would run.
+- Unlock needs a typed `UNLOCK`, which `--yes` cannot bypass, and a stock backup unless `--i-know`.
+- Test boot before flash on every device that supports it. If root does not come up from RAM,
+  nothing was written.
+- Partition existence is confirmed with `fastboot getvar` before `fastboot flash`. `init_boot`
+  is taken from the device partition table, not guessed from the model name.
+- Image kind is checked against the target: no vendor_boot into boot, no kernel into init_boot.
+- Stock images and vbmeta are saved with a manifest per serial before any write.
+  `sudroid restore` puts them back. On failure the engine offers to undo completed writes.
+- Sessions are checkpointed. `sudroid root --resume` continues after a cable pull.
+- Downloads are sha256 verified where the source publishes a hash. No `sudo`, no shortened links.
+
+## Supported devices
+
+| Vendor | Unlock | Flash | Test boot |
+|---|---|---|---|
+| Google Pixel | automated | fastboot | boot targets |
+| OnePlus, Nothing, generic fastboot | automated | fastboot | yes |
+| Motorola | automated with unlock key | fastboot | yes |
+| Sony Xperia | automated with unlock code | fastboot | yes |
+| Xiaomi, Redmi, POCO | guided (Mi Unlock) | fastboot | yes |
+| ASUS | guided | fastboot | yes |
+| Samsung | guided (download mode) | Heimdall or Odin tar | no |
+
+Full matrix: [docs/support-matrix.md](docs/support-matrix.md). Unlock guides per vendor:
+[docs/unlock](docs/unlock/README.md). Problems: [docs/troubleshooting.md](docs/troubleshooting.md).
+
+## Configuration
+
+`sudroid config --init` writes `~/.config/sudroid/config.toml` (platform equivalent elsewhere).
+Every key can be overridden with `SUDROID_<SECTION>_<KEY>`.
+
+```toml
+[general]
+min_battery = 50
+backup_dir = "~/sudroid-backups"
+log_level = "info"
+
+[magisk]
+channel = "stable"        # stable, beta, canary, debug
+pinned_version = ""       # e.g. "v28.1"
+keep_verity = true
+keep_force_encrypt = true
+patch_vbmeta = false
+recovery_mode = false
+
+[tools]
+adb = ""                  # explicit paths override PATH
+fastboot = ""
+heimdall = ""
+auto_download = true      # fetch Google platform-tools when missing
+```
+
+## How it is built
+
+```
+cli  ->  commands  ->  workflow engine (check / confirm / run / checkpoint / undo)
+                         |
+              +----------+-----------+
+              |          |           |
+            root/     images/     backup/        <- Magisk, KernelSU, APatch; payload.bin,
+              |          |           |              factory zip, AP tar; manifests
+              +----------+-----------+
+                         |
+                      device/                     <- props -> Device, vendor profiles
+                         |
+                      tools/                      <- adb, fastboot, heimdall, platform-tools
+                                                     (the only place that spawns processes)
+```
+
+Only `tools/` runs subprocesses, behind a `Runner` that tests replace with a scripted fake device
+and `--dry-run` wraps to block writes. Detection is a pure function from a getprop dump to an
+immutable `Device`. Vendor logic lives in `device/profiles/` and nowhere else.
+
+```
+git clone https://github.com/sarat1kyan/suDROID && cd suDROID
+uv venv -p 3.12 .venv && uv pip install -p .venv/bin/python -e '.[dev]'
+.venv/bin/ruff check . && .venv/bin/mypy && .venv/bin/pytest
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the rules and how to add a device fixture.
+
+## Legacy
+
+The v2.0 and v2.1 scripts live in [`legacy/`](legacy/) for reference. They are unmaintained and
+will be removed in 3.1.
+
+## Disclaimer
+
+Rooting voids warranties, trips Knox, erases DRM keys on Sony, and can brick a device when done
+wrong. suDROID reduces the ways to do it wrong; it does not remove them. Read the plan it prints,
+keep the backup it makes, and understand each step before you confirm it. MIT licensed, provided
+as is.
