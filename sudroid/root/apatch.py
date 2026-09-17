@@ -7,8 +7,8 @@ from sudroid.root.github import Release
 REPO = "bmax121/APatch"
 
 
-def manager_apk(rel: Release) -> str | None:
-    return rel.find(".apk", exclude=("debug",)) or rel.find(".apk")
+def manager_apk(rel: Release) -> tuple[str, str] | None:
+    return rel.find_asset(".apk", exclude=("debug",)) or rel.find_asset(".apk")
 
 
 def steps() -> list[str]:

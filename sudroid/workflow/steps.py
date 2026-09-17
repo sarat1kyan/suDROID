@@ -17,9 +17,10 @@ from sudroid.images import pixel_factory
 from sudroid.images.sources import extract_firmware
 from sudroid.images.verify import inspect
 from sudroid.paths import cache_dir
-from sudroid.root import releases
+from sudroid.root import apatch, kernelsu, releases
 from sudroid.root.apk import MagiskBundle, extract_bundle
 from sudroid.root.device_patch import DevicePatcher, PatchOptions
+from sudroid.root.github import download_asset, latest_release
 from sudroid.ui import prompts
 from sudroid.workflow.engine import Runtime, Step
 
@@ -33,6 +34,9 @@ def _http_client() -> httpx.Client:
 
 
 def target_of(rt: Runtime) -> PatchTarget:
+    override = rt.data.get("target")
+    if override:
+        return PatchTarget(override)
     return rt.profile.patch_target(rt.device)
 
 
@@ -91,6 +95,11 @@ class AcquireImage(Step):
 
     def describe(self, rt: Runtime) -> str:
         return f"Acquire stock {target_of(rt).value} image"
+
+    def skip(self, rt: Runtime) -> str:
+        if rt.data.get("skip_backup") and rt.data.get("method", "magisk") != "magisk":
+            return "no stock image needed without backup"
+        return ""
 
     def run(self, rt: Runtime) -> None:
         rt.work.mkdir(parents=True, exist_ok=True)
@@ -184,7 +193,9 @@ class BackupStock(Step):
     title = "Back up stock image"
 
     def skip(self, rt: Runtime) -> str:
-        return "requested with --skip-backup" if rt.data.get("skip_backup") else ""
+        if rt.data.get("skip_backup"):
+            return "requested with --skip-backup"
+        return "" if rt.data.get("stock") else "no stock image acquired"
 
     def run(self, rt: Runtime) -> None:
         bm = BackupManager(rt.ctx.config.backup_dir)
@@ -420,6 +431,77 @@ class VerifyRoot(Step):
             )
 
 
+class FetchKernelSU(Step):
+    name = "fetch_kernelsu"
+    title = "Fetch KernelSU GKI kernel"
+
+    def check(self, rt: Runtime) -> None:
+        if rt.profile.flash_backend is not FlashBackend.FASTBOOT:
+            raise PreconditionError(
+                "KernelSU automated flow needs fastboot",
+                hint="Patch with the KernelSU app or flash a KernelSU boot image manually.",
+            )
+        if kernelsu.kmi_of(rt.device.kernel) is None:
+            raise PreconditionError(
+                f"kernel {rt.device.kernel or 'unknown'} is not a GKI kernel",
+                hint="\n".join(kernelsu.steps_manual()),
+            )
+
+    def run(self, rt: Runtime) -> None:
+        kmi = kernelsu.kmi_of(rt.device.kernel) or ""
+        with _http_client() as client:
+            rel = latest_release(client, kernelsu.REPO, cache_dir() / "github")
+            match = kernelsu.match_boot_asset(rel, kmi)
+            if match is None:
+                raise PreconditionError(
+                    f"KernelSU {rel.tag} has no prebuilt for KMI {kmi}",
+                    hint="\n".join(kernelsu.steps_manual()),
+                )
+            name, url = match
+            rt.say(f"KernelSU {rel.tag}: {name}")
+            gz = download_asset(client, url, cache_dir() / "kernelsu" / rel.tag / name)
+            manager = kernelsu.manager_apk(rel)
+            if manager:
+                apk_name, apk_url = manager
+                apk = download_asset(client, apk_url, cache_dir() / "kernelsu" / rel.tag / apk_name)
+                rt.data["apk"] = str(apk)
+        rt.work.mkdir(parents=True, exist_ok=True)
+        img = kernelsu.gunzip(gz, rt.work / "kernelsu_boot.img")
+        info = inspect(img)
+        if not info.is_boot:
+            raise PreconditionError(f"{name} did not unpack to a boot image")
+        rt.data["patched"] = str(img)
+        rt.data["target"] = PatchTarget.BOOT.value
+        rt.data["magisk_version"] = f"KernelSU {rel.tag}"
+
+
+class FetchAPatch(Step):
+    name = "fetch_apatch"
+    title = "Install APatch manager and stage stock image"
+    mutating = True
+
+    def run(self, rt: Runtime) -> None:
+        with _http_client() as client:
+            rel = latest_release(client, apatch.REPO, cache_dir() / "github")
+            manager = apatch.manager_apk(rel)
+            if not manager:
+                raise PreconditionError(f"APatch {rel.tag} has no manager APK asset")
+            apk_name, apk_url = manager
+            apk = download_asset(client, apk_url, cache_dir() / "apatch" / rel.tag / apk_name)
+        rt.data["apk"] = str(apk)
+        adb = rt.ctx.adb()
+        r = adb.install(apk)
+        if not r.ok:
+            log.warning("APatch install failed: %s", r.combined)
+        stock = rt.data.get("stock")
+        if stock:
+            adb.push(Path(stock), f"/sdcard/Download/stock_{target_of(rt).value}.img")
+            rt.say(f"stock image copied to Download/stock_{target_of(rt).value}.img")
+        rt.say(f"[bold]APatch {rel.tag} installed. Next steps:[/]")
+        for i, line in enumerate(apatch.steps(), 1):
+            rt.say(f"  {i}. {line}")
+
+
 class SkipInOdinMode(Step):
     """Mixin-like base: steps that cannot run when the user flashes with Odin."""
 
@@ -447,7 +529,32 @@ class VerifyRootAfterOdin(SkipInOdinMode, VerifyRoot):
         VerifyRoot.run(self, rt)
 
 
-def root_steps(profile: VendorProfile) -> list[Step]:
+def root_steps(profile: VendorProfile, method: str = "magisk") -> list[Step]:
+    if method == "kernelsu":
+        return [
+            CheckTools(),
+            CheckBattery(),
+            CheckUnlocked(),
+            AcquireImage(),
+            BackupStock(),
+            FetchKernelSU(),
+            TestBoot(),
+            FlashImage(),
+            WaitBoot(),
+            InstallApp(),
+            VerifyRoot(),
+        ]
+    if method == "apatch":
+        return [
+            CheckTools(),
+            CheckBattery(),
+            CheckUnlocked(),
+            AcquireImage(),
+            BackupStock(),
+            FetchAPatch(),
+        ]
+    if method != "magisk":
+        raise PreconditionError(f"unknown method {method}", hint="magisk, kernelsu or apatch")
     if profile.flash_backend is FlashBackend.FASTBOOT:
         return [
             CheckTools(),

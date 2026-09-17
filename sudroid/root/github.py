@@ -22,14 +22,18 @@ class Release:
     tag: str
     assets: dict[str, str]  # name -> browser_download_url
 
-    def find(self, *needles: str, exclude: tuple[str, ...] = ()) -> str | None:
+    def find_asset(self, *needles: str, exclude: tuple[str, ...] = ()) -> tuple[str, str] | None:
         for name, url in self.assets.items():
             low = name.lower()
             if all(n.lower() in low for n in needles) and not any(
                 e.lower() in low for e in exclude
             ):
-                return url
+                return name, url
         return None
+
+    def find(self, *needles: str, exclude: tuple[str, ...] = ()) -> str | None:
+        found = self.find_asset(*needles, exclude=exclude)
+        return found[1] if found else None
 
 
 def latest_release(client: httpx.Client, repo: str, cache: Path | None = None) -> Release:

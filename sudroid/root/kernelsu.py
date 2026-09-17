@@ -37,8 +37,8 @@ def match_boot_asset(rel: Release, kmi: str) -> tuple[str, str] | None:
     return candidates[-1]
 
 
-def manager_apk(rel: Release) -> str | None:
-    return rel.find("kernelsu", ".apk", exclude=("debug",)) or rel.find(".apk")
+def manager_apk(rel: Release) -> tuple[str, str] | None:
+    return rel.find_asset("kernelsu", ".apk", exclude=("debug",)) or rel.find_asset(".apk")
 
 
 def gunzip(src: Path, dest: Path) -> Path:

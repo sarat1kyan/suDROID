@@ -120,7 +120,9 @@ def profiles(ctx: typer.Context) -> None:
 @app.command()
 def root(
     ctx: typer.Context,
-    method: Annotated[str, typer.Option("--method", help="magisk (automated).")] = "magisk",
+    method: Annotated[
+        str, typer.Option("--method", help="magisk, kernelsu (GKI prebuilt) or apatch (manager).")
+    ] = "magisk",
     image: Annotated[
         Path | None, typer.Option("--image", help="Stock boot/init_boot image for this build.")
     ] = None,
@@ -148,6 +150,10 @@ def root(
             "--odin", help="Samsung: write an Odin tar instead of flashing with Heimdall."
         ),
     ] = False,
+    auto_fetch: Annotated[
+        bool,
+        typer.Option("--auto-fetch", help="Pixel: download the factory image for this build."),
+    ] = False,
 ) -> None:
     """Root the device: acquire stock image, back up, patch, test-boot, flash, verify."""
     from sudroid.commands import root as cmd
@@ -164,6 +170,7 @@ def root(
             magisk_version=magisk_version,
             firmware=firmware,
             odin=odin,
+            auto_fetch=auto_fetch,
         ),
     )
 

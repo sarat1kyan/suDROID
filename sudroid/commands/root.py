@@ -24,12 +24,11 @@ def run(
     magisk_version: str = "",
     firmware: Path | None = None,
     odin: bool = False,
+    auto_fetch: bool = False,
 ) -> None:
-    if method != "magisk":
-        raise PreconditionError(
-            f"{method}: automated patching is Magisk only",
-            hint="Patch with the APatch or KernelSU app, then run `sudroid flash <image>`.",
-        )
+    method = method.lower()
+    if method not in {"magisk", "kernelsu", "apatch"}:
+        raise PreconditionError(f"unknown method {method}", hint="magisk, kernelsu or apatch")
     device = detect_device(ctx)
     profile = profile_for(device)
     ctx.console.print(device_table(device, profile))
@@ -65,8 +64,11 @@ def run(
         rt.data["firmware"] = str(firmware)
     if odin:
         rt.data["odin"] = "1"
+    if auto_fetch:
+        rt.data["auto_fetch"] = "1"
+    rt.data["method"] = method
 
-    engine = Engine(rt, root_steps(profile))
+    engine = Engine(rt, root_steps(profile, method))
     ctx.console.print(engine.plan_table())
     if not ctx.dry_run:
         prompts.require(ctx, "Start rooting?")

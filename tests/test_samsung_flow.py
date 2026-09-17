@@ -133,11 +133,11 @@ def test_samsung_missing_heimdall_hint(tmp_path: Path, monkeypatch: pytest.Monke
     assert "--odin" in r.output
 
 
-def test_fastboot_vendor_firmware_not_yet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_fastboot_vendor_bad_firmware(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     dev = FakeDevice("oneplus9")
     install(monkeypatch, tmp_path, dev)
     fw = tmp_path / "ota.zip"
     fw.write_bytes(b"PK")
     r = runner.invoke(cli.app, ["--yes", "root", "--firmware", str(fw)])
     assert r.exit_code == 20
-    assert "--image" in r.output
+    assert "not a valid zip" in r.output

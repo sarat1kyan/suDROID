@@ -29,7 +29,7 @@ def test_match_boot_asset_and_manager() -> None:
     m = kernelsu.match_boot_asset(rel, "android12-5.10")
     assert m == ("android12-5.10.209_2024-05-boot.img.gz", "https://x/a12-510.img.gz")
     assert kernelsu.match_boot_asset(rel, "android11-5.4") is None
-    assert kernelsu.manager_apk(rel) == "https://x/ksu.apk"
+    assert kernelsu.manager_apk(rel) == ("KernelSU_v0.9.5_11928-release.apk", "https://x/ksu.apk")
 
 
 def test_apatch_manager() -> None:
@@ -41,7 +41,7 @@ def test_apatch_manager() -> None:
             "APatch_10927-debug.apk": "https://x/apd.apk",
         },
     )
-    assert apatch.manager_apk(rel) == "https://x/ap.apk"
+    assert apatch.manager_apk(rel) == ("APatch_10927_10927-release.apk", "https://x/ap.apk")
     assert len(apatch.steps()) >= 4
 
 
