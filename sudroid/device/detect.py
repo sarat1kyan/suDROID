@@ -195,4 +195,6 @@ def detect(raw: RawInfo) -> Device:
         encryption=encryption,
         root_present=_root_present(raw.which),
         battery=raw.battery,
+        warranty_bit=p.get("ro.boot.warranty_bit").strip(),
+        kg_locked=p.get("ro.boot.other.locked").strip() == "1",
     )

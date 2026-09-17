@@ -85,6 +85,8 @@ class Device:
     encryption: str
     root_present: str
     battery: int | None
+    warranty_bit: str = ""
+    kg_locked: bool = False
 
     @property
     def slot_suffix(self) -> str:
