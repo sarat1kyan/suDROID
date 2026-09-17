@@ -1,0 +1,116 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e .[dev]
+      - run: ruff check . && ruff format --check . && mypy && pytest
+
+  sdist-wheel:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build
+      - run: python -m build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  binaries:
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x86_64
+            ext: ""
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+            ext: ""
+          - os: macos-13
+            target: macos-x86_64
+            ext: ""
+          - os: macos-latest
+            target: macos-arm64
+            ext: ""
+          - os: windows-latest
+            target: windows-x86_64
+            ext: ".exe"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install . pyinstaller
+      - run: >
+          pyinstaller --onefile --name sudroid-${{ matrix.target }}
+          --collect-all sudroid --hidden-import lz4.frame
+          sudroid/__main__.py
+      - shell: bash
+        run: |
+          cd dist
+          f="sudroid-${{ matrix.target }}${{ matrix.ext }}"
+          if command -v sha256sum >/dev/null; then sha256sum "$f" > "$f.sha256"; else shasum -a 256 "$f" > "$f.sha256"; fi
+          ./"$f" --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.target }}
+          path: |
+            dist/sudroid-${{ matrix.target }}${{ matrix.ext }}
+            dist/sudroid-${{ matrix.target }}${{ matrix.ext }}.sha256
+
+  github-release:
+    needs: [sdist-wheel, binaries]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Collect
+        run: |
+          mkdir -p out
+          find artifacts -type f -exec cp {} out/ \;
+          cd out && sha256sum * > SHA256SUMS
+      - name: Extract changelog section
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          awk -v tag="$tag" '/^## /{p = index($0, tag) > 0} p' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "Release $GITHUB_REF_NAME" > notes.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: notes.md
+          files: out/*
+
+  pypi:
+    needs: [sdist-wheel, binaries]
+    if: vars.PYPI_TRUSTED_PUBLISHING == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
