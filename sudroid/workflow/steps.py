@@ -221,7 +221,8 @@ def _to_bootloader(rt: Runtime) -> None:
     fb = rt.ctx.fastboot()
     if fb.devices():
         return
-    if any(d.serial == rt.device.serial for d in adb.devices()):
+    booted = [d for d in adb.devices() if d.ready]
+    if any(adb.serial is None or d.serial == adb.serial for d in booted):
         adb.reboot("bootloader")
     if not fb.wait(timeout=120):
         raise FlashError(
@@ -277,6 +278,11 @@ class FlashImage(Step):
 
     def describe(self, rt: Runtime) -> str:
         return f"Flash patched image to {partition_of(rt)}"
+
+    def skip(self, rt: Runtime) -> str:
+        if rt.ctx.dry_run and not rt.data.get("patched"):
+            return "dry-run, no patched image"
+        return ""
 
     def check(self, rt: Runtime) -> None:
         if not rt.data.get("patched"):
