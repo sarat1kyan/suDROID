@@ -11,7 +11,9 @@ import httpx
 
 from sudroid.backup.manager import BackupManager
 from sudroid.device.model import FlashBackend, PatchTarget
+from sudroid.device.profiles.base import VendorProfile
 from sudroid.errors import FlashError, PreconditionError
+from sudroid.images.samsung import extract_ap
 from sudroid.images.verify import inspect
 from sudroid.paths import cache_dir
 from sudroid.root import releases
@@ -44,22 +46,6 @@ class CheckTools(Step):
         rt.ctx.adb()
         if rt.profile.flash_backend is FlashBackend.FASTBOOT:
             rt.ctx.fastboot()
-
-
-class CheckBackend(Step):
-    name = "check_backend"
-    title = "Check flash backend"
-
-    def check(self, rt: Runtime) -> None:
-        if rt.profile.flash_backend is not FlashBackend.FASTBOOT:
-            raise PreconditionError(
-                f"{rt.profile.name} uses {rt.profile.flash_backend.value}, "
-                "which this command does not drive yet",
-                hint="Samsung support (Heimdall, Odin tar) arrives in the next release.",
-            )
-
-    def run(self, rt: Runtime) -> None:
-        return None
 
 
 class CheckBattery(Step):
@@ -108,7 +94,30 @@ class AcquireImage(Step):
         rt.work.mkdir(parents=True, exist_ok=True)
         dest = rt.work / f"stock_{target_of(rt).value}.img"
         given = rt.data.get("image")
-        if given:
+        firmware = rt.data.get("firmware")
+        if firmware and not given:
+            fw = Path(firmware).expanduser()
+            if not fw.is_file():
+                raise PreconditionError(f"firmware archive not found: {fw}")
+            if rt.profile.flash_backend is FlashBackend.FASTBOOT:
+                raise PreconditionError(
+                    "firmware archive extraction for fastboot devices is not available yet",
+                    hint="Extract boot.img or init_boot.img from the factory image, pass --image.",
+                )
+            want = f"{target_of(rt).value}.img"
+            found = extract_ap(fw, rt.work / "firmware", names=(want, "vbmeta.img"))
+            if want not in found:
+                raise PreconditionError(
+                    f"{want} not found in {fw.name}",
+                    hint=f"Archive contains: {', '.join(sorted(found))}. "
+                    "Use the AP tar for this build.",
+                )
+            shutil.copy2(found[want], dest)
+            if "vbmeta.img" in found:
+                rt.data["vbmeta"] = str(found["vbmeta.img"])
+            rt.data["stock_source"] = f"firmware:{fw.name}"
+            given = ""
+        elif given:
             src = Path(given).expanduser()
             if not src.is_file():
                 raise PreconditionError(f"image not found: {src}")
@@ -164,6 +173,12 @@ class BackupStock(Step):
         rt.data["backup_id"] = entry.id
         rt.data["backup_path"] = entry.path
         rt.say(f"backup: {entry.path}")
+        vb = rt.data.get("vbmeta")
+        if vb:
+            vb_entry = bm.save(
+                rt.device, "vbmeta", Path(vb), rt.data.get("stock_source", "unknown")
+            )
+            rt.data["backup_vbmeta_path"] = vb_entry.path
 
 
 class FetchMagisk(Step):
@@ -381,19 +396,71 @@ class VerifyRoot(Step):
             )
 
 
-def root_steps() -> list[Step]:
+class SkipInOdinMode(Step):
+    """Mixin-like base: steps that cannot run when the user flashes with Odin."""
+
+    def skip(self, rt: Runtime) -> str:
+        if rt.data.get("odin"):
+            return "flash with Odin first, then run sudroid verify"
+        return super().skip(rt)
+
+    def run(self, rt: Runtime) -> None:  # pragma: no cover - overridden
+        raise NotImplementedError
+
+
+class WaitBootAfterOdin(SkipInOdinMode, WaitBoot):
+    def run(self, rt: Runtime) -> None:
+        WaitBoot.run(self, rt)
+
+
+class InstallAppAfterOdin(SkipInOdinMode, InstallApp):
+    def run(self, rt: Runtime) -> None:
+        InstallApp.run(self, rt)
+
+
+class VerifyRootAfterOdin(SkipInOdinMode, VerifyRoot):
+    def run(self, rt: Runtime) -> None:
+        VerifyRoot.run(self, rt)
+
+
+def root_steps(profile: VendorProfile) -> list[Step]:
+    if profile.flash_backend is FlashBackend.FASTBOOT:
+        return [
+            CheckTools(),
+            CheckBattery(),
+            CheckUnlocked(),
+            AcquireImage(),
+            BackupStock(),
+            FetchMagisk(),
+            PatchImage(),
+            TestBoot(),
+            FlashImage(),
+            WaitBoot(),
+            InstallApp(),
+            VerifyRoot(),
+        ]
+    from sudroid.workflow.samsung_steps import (
+        CheckHeimdall,
+        EnterDownloadMode,
+        HeimdallFlash,
+        OdinTarOut,
+        PatchVbmeta,
+    )
+
     return [
         CheckTools(),
-        CheckBackend(),
+        CheckHeimdall(),
         CheckBattery(),
         CheckUnlocked(),
         AcquireImage(),
         BackupStock(),
         FetchMagisk(),
         PatchImage(),
-        TestBoot(),
-        FlashImage(),
-        WaitBoot(),
-        InstallApp(),
-        VerifyRoot(),
+        PatchVbmeta(),
+        OdinTarOut(),
+        EnterDownloadMode(),
+        HeimdallFlash(),
+        WaitBootAfterOdin(),
+        InstallAppAfterOdin(),
+        VerifyRootAfterOdin(),
     ]

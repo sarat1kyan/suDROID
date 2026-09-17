@@ -136,6 +136,18 @@ def root(
     magisk_version: Annotated[
         str, typer.Option("--magisk-version", help="Pin a Magisk tag, e.g. v28.1.")
     ] = "",
+    firmware: Annotated[
+        Path | None,
+        typer.Option(
+            "--firmware", help="Firmware archive (Samsung AP tar) to take stock images from."
+        ),
+    ] = None,
+    odin: Annotated[
+        bool,
+        typer.Option(
+            "--odin", help="Samsung: write an Odin tar instead of flashing with Heimdall."
+        ),
+    ] = False,
 ) -> None:
     """Root the device: acquire stock image, back up, patch, test-boot, flash, verify."""
     from sudroid.commands import root as cmd
@@ -150,6 +162,8 @@ def root(
             skip_backup=skip_backup,
             resume=resume,
             magisk_version=magisk_version,
+            firmware=firmware,
+            odin=odin,
         ),
     )
 
@@ -200,6 +214,19 @@ def flash(
     from sudroid.commands import flash as cmd
 
     _run(ctx, lambda c: cmd.run(c, image, partition=partition, slot=slot, test_boot=test_boot))
+
+
+@app.command()
+def unlock(
+    ctx: typer.Context,
+    i_know: Annotated[
+        bool, typer.Option("--i-know", help="Proceed without a stock image backup.")
+    ] = False,
+) -> None:
+    """Unlock the bootloader. Wipes the device. Guided where the vendor needs a tool."""
+    from sudroid.commands import unlock as cmd
+
+    _run(ctx, lambda c: cmd.run(c, i_know=i_know))
 
 
 @app.command()
