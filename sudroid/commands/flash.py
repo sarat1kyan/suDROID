@@ -31,7 +31,7 @@ def run(
     if profile.flash_backend is not FlashBackend.FASTBOOT:
         raise PreconditionError(
             f"{profile.name} needs {profile.flash_backend.value}",
-            hint="Samsung flashing arrives in the next release.",
+            hint="Use `sudroid root --firmware AP.tar.md5` (Heimdall) or `--odin` for a tar.",
         )
     base = partition or profile.patch_target(device).value
     if base not in KIND_FOR:

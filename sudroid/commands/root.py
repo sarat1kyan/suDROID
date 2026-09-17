@@ -22,6 +22,8 @@ def run(
     skip_backup: bool = False,
     resume: bool = False,
     magisk_version: str = "",
+    firmware: Path | None = None,
+    odin: bool = False,
 ) -> None:
     if method != "magisk":
         raise PreconditionError(
@@ -59,8 +61,12 @@ def run(
         rt.data["skip_backup"] = "1"
     if magisk_version:
         rt.data["magisk_version"] = magisk_version
+    if firmware:
+        rt.data["firmware"] = str(firmware)
+    if odin:
+        rt.data["odin"] = "1"
 
-    engine = Engine(rt, root_steps())
+    engine = Engine(rt, root_steps(profile))
     ctx.console.print(engine.plan_table())
     if not ctx.dry_run:
         prompts.require(ctx, "Start rooting?")
