@@ -62,13 +62,15 @@ class PatchVbmeta(Step):
 
 
 def _images(rt: Runtime, *, stock: bool = False) -> dict[str, Path]:
-    key_img = "backup_path" if stock else "patched"
-    key_vb = "vbmeta" if stock else "patched_vbmeta"
-    img = rt.data.get(key_img) or rt.data.get("stock" if stock else "patched")
+    if stock:
+        img = rt.data.get("backup_path") or rt.data.get("stock")
+        vb = rt.data.get("backup_vbmeta_path") or rt.data.get("vbmeta")
+    else:
+        img = rt.data.get("patched")
+        vb = rt.data.get("patched_vbmeta")
     if not img:
         raise PreconditionError("no image to flash in session")
     out = {partition_of(rt): Path(img)}
-    vb = rt.data.get(key_vb)
     if vb:
         out[VBMETA_PARTITION] = Path(vb)
     return out
