@@ -132,6 +132,14 @@ class DryRunRunner:
 Response = str | Result | Callable[[Args], Result]
 
 
+def _prefix_matches(prefix: Args, argv: Args) -> bool:
+    """All prefix elements equal, except the last which may be a string prefix."""
+    if len(prefix) > len(argv) or not prefix:
+        return False
+    head, last = prefix[:-1], prefix[-1]
+    return argv[: len(head)] == head and argv[len(head)].startswith(last)
+
+
 @dataclass
 class FakeRunner:
     """Test double. Exact-match responses first, then prefix matches."""
@@ -162,7 +170,7 @@ class FakeRunner:
         response = self.responses.get(argv)
         if response is None:
             for prefix, resp in self.prefixes:
-                if argv[: len(prefix)] == prefix:
+                if _prefix_matches(prefix, argv):
                     response = resp
                     break
         if response is None:
