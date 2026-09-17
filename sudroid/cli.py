@@ -117,6 +117,113 @@ def profiles(ctx: typer.Context) -> None:
     _run(ctx, cmd.run)
 
 
+@app.command()
+def root(
+    ctx: typer.Context,
+    method: Annotated[str, typer.Option("--method", help="magisk (automated).")] = "magisk",
+    image: Annotated[
+        Path | None, typer.Option("--image", help="Stock boot/init_boot image for this build.")
+    ] = None,
+    no_test_boot: Annotated[
+        bool, typer.Option("--no-test-boot", help="Skip fastboot boot test before flashing.")
+    ] = False,
+    skip_backup: Annotated[
+        bool, typer.Option("--skip-backup", help="Do not save stock image.")
+    ] = False,
+    resume: Annotated[
+        bool, typer.Option("--resume", help="Continue the last incomplete run.")
+    ] = False,
+    magisk_version: Annotated[
+        str, typer.Option("--magisk-version", help="Pin a Magisk tag, e.g. v28.1.")
+    ] = "",
+) -> None:
+    """Root the device: acquire stock image, back up, patch, test-boot, flash, verify."""
+    from sudroid.commands import root as cmd
+
+    _run(
+        ctx,
+        lambda c: cmd.run(
+            c,
+            method=method,
+            image=image,
+            no_test_boot=no_test_boot,
+            skip_backup=skip_backup,
+            resume=resume,
+            magisk_version=magisk_version,
+        ),
+    )
+
+
+@app.command()
+def backup(
+    ctx: typer.Context,
+    image: Annotated[Path | None, typer.Option("--image", help="Stock image to register.")] = None,
+    partition: Annotated[
+        str | None, typer.Option("--partition", help="boot, init_boot or vendor_boot.")
+    ] = None,
+    list_only: Annotated[
+        bool, typer.Option("--list", help="List backups for this device.")
+    ] = False,
+) -> None:
+    """Save a stock image for this device, or list backups."""
+    from sudroid.commands import backup as cmd
+
+    _run(ctx, lambda c: cmd.run(c, image=image, partition=partition, list_only=list_only))
+
+
+@app.command()
+def patch(
+    ctx: typer.Context,
+    image: Annotated[Path, typer.Argument(help="Stock boot or init_boot image.")],
+    out: Annotated[Path | None, typer.Option("--out", help="Output path.")] = None,
+    magisk_version: Annotated[str, typer.Option("--magisk-version", help="Pin a Magisk tag.")] = "",
+) -> None:
+    """Patch an image with Magisk on the connected device. Nothing is flashed."""
+    from sudroid.commands import patch as cmd
+
+    _run(ctx, lambda c: cmd.run(c, image, out=out, magisk_version=magisk_version))
+
+
+@app.command()
+def flash(
+    ctx: typer.Context,
+    image: Annotated[Path, typer.Argument(help="Image to flash.")],
+    partition: Annotated[
+        str | None, typer.Option("--partition", help="boot, init_boot, vendor_boot, vbmeta.")
+    ] = None,
+    slot: Annotated[str, typer.Option("--slot", help="a, b or current.")] = "current",
+    test_boot: Annotated[
+        bool, typer.Option("--test-boot", help="fastboot boot the image first (boot only).")
+    ] = False,
+) -> None:
+    """Flash a user supplied image (APatch, KernelSU, restore) to the right partition and slot."""
+    from sudroid.commands import flash as cmd
+
+    _run(ctx, lambda c: cmd.run(c, image, partition=partition, slot=slot, test_boot=test_boot))
+
+
+@app.command()
+def verify(ctx: typer.Context) -> None:
+    """Check root access and which root solution is active."""
+    from sudroid.commands import verify as cmd
+
+    _run(ctx, cmd.run)
+
+
+@app.command()
+def restore(
+    ctx: typer.Context,
+    partition: Annotated[str | None, typer.Option("--partition")] = None,
+    backup_id: Annotated[
+        str | None, typer.Option("--backup", help="Backup id from --list.")
+    ] = None,
+) -> None:
+    """Flash the saved stock image back."""
+    from sudroid.commands import restore as cmd
+
+    _run(ctx, lambda c: cmd.run(c, partition=partition, backup_id=backup_id))
+
+
 @app.command("config")
 def config_cmd(
     ctx: typer.Context,
