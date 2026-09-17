@@ -1,0 +1,22 @@
+from __future__ import annotations
+
+from sudroid.device.model import Device, PatchTarget, Vendor
+from sudroid.device.profiles.base import VendorProfile
+
+
+class NothingProfile(VendorProfile):
+    name = "Nothing"
+    vendor = Vendor.NOTHING
+
+    def unlock_steps(self, d: Device) -> list[str]:
+        return [
+            "Enable OEM unlocking and USB debugging",
+            "Tool reboots to bootloader and runs: fastboot flashing unlock",
+            "Confirm on the phone. Device wipes.",
+        ]
+
+    def unlock_commands(self, d: Device) -> list[list[str]]:
+        return [["flashing", "unlock"]]
+
+    def patch_target(self, d: Device) -> PatchTarget:
+        return PatchTarget.INIT_BOOT if d.has_init_boot else PatchTarget.BOOT
