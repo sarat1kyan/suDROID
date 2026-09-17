@@ -53,7 +53,15 @@ def test_ensure_raises_when_no_download(tmp_path: Path, monkeypatch: pytest.Monk
 def test_download_and_ensure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PATH", str(tmp_path))
     monkeypatch.setattr(pt, "common_dirs", lambda: [])
-    payload = _zip_with(["platform-tools/", "platform-tools/adb", "platform-tools/fastboot"])
+    payload = _zip_with(
+        [
+            "platform-tools/",
+            "platform-tools/adb",
+            "platform-tools/adb.exe",
+            "platform-tools/fastboot",
+            "platform-tools/fastboot.exe",
+        ]
+    )
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert "platform-tools-latest" in str(request.url)
