@@ -1,4 +1,5 @@
 #!/bin/bash
+# Deprecated. Superseded by the sudroid Python CLI. Removed in v3.1.
 LOGFILE="rooting_process_$(date +"%Y%m%d_%H%M%S").log"
 exec > >(tee -a "$LOGFILE") 2>&1
 exec 2>&1

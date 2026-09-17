@@ -1,3 +1,4 @@
+# Deprecated. Superseded by the sudroid Python CLI. Removed in v3.1.
 # Set up logging
 $LogFile = "rooting_process_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 Start-Transcript -Path $LogFile -Append
