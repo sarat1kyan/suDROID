@@ -58,15 +58,9 @@ def extract_bundle(apk: Path, abi: str, dest: Path, version: str = "") -> Magisk
                     out.write_bytes(zf.read(n))
                     written.append(out.name)
                     break
-        if not version:
-            version = _version_from_names(names)
     (dest / "magisk.apk").write_bytes(apk.read_bytes())
     written.append("magisk.apk")
     if "boot_patch.sh" not in written or "magiskboot" not in written or "magiskinit" not in written:
         raise PatchError("Magisk APK is missing boot_patch.sh, magiskboot or magiskinit")
     log.debug("extracted %s for %s: %s", apk.name, abi, written)
     return MagiskBundle(dest, version, abi, tuple(sorted(set(written))))
-
-
-def _version_from_names(names: list[str]) -> str:
-    return ""
