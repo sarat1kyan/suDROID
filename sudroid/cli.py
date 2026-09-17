@@ -203,6 +203,19 @@ def flash(
 
 
 @app.command()
+def unlock(
+    ctx: typer.Context,
+    i_know: Annotated[
+        bool, typer.Option("--i-know", help="Proceed without a stock image backup.")
+    ] = False,
+) -> None:
+    """Unlock the bootloader. Wipes the device. Guided where the vendor needs a tool."""
+    from sudroid.commands import unlock as cmd
+
+    _run(ctx, lambda c: cmd.run(c, i_know=i_know))
+
+
+@app.command()
 def verify(ctx: typer.Context) -> None:
     """Check root access and which root solution is active."""
     from sudroid.commands import verify as cmd
