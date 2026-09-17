@@ -141,7 +141,8 @@ def root(
     firmware: Annotated[
         Path | None,
         typer.Option(
-            "--firmware", help="Firmware archive (Samsung AP tar) to take stock images from."
+            "--firmware",
+            help="Firmware package: OTA zip, factory zip, payload.bin or Samsung AP tar.",
         ),
     ] = None,
     odin: Annotated[
