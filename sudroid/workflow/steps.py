@@ -10,15 +10,18 @@ from pathlib import Path
 import httpx
 
 from sudroid.backup.manager import BackupManager
-from sudroid.device.model import FlashBackend, PatchTarget
+from sudroid.device.model import FlashBackend, PatchTarget, Vendor
 from sudroid.device.profiles.base import VendorProfile
 from sudroid.errors import FlashError, PreconditionError
-from sudroid.images.samsung import extract_ap
+from sudroid.images import pixel_factory
+from sudroid.images.sources import extract_firmware
 from sudroid.images.verify import inspect
 from sudroid.paths import cache_dir
-from sudroid.root import releases
+from sudroid.root import apatch, kernelsu, releases
 from sudroid.root.apk import MagiskBundle, extract_bundle
 from sudroid.root.device_patch import DevicePatcher, PatchOptions
+from sudroid.root.github import download_asset, latest_release
+from sudroid.ui import prompts
 from sudroid.workflow.engine import Runtime, Step
 
 log = logging.getLogger(__name__)
@@ -31,6 +34,9 @@ def _http_client() -> httpx.Client:
 
 
 def target_of(rt: Runtime) -> PatchTarget:
+    override = rt.data.get("target")
+    if override:
+        return PatchTarget(override)
     return rt.profile.patch_target(rt.device)
 
 
@@ -90,27 +96,27 @@ class AcquireImage(Step):
     def describe(self, rt: Runtime) -> str:
         return f"Acquire stock {target_of(rt).value} image"
 
+    def skip(self, rt: Runtime) -> str:
+        if rt.data.get("skip_backup") and rt.data.get("method", "magisk") != "magisk":
+            return "no stock image needed without backup"
+        return ""
+
     def run(self, rt: Runtime) -> None:
         rt.work.mkdir(parents=True, exist_ok=True)
         dest = rt.work / f"stock_{target_of(rt).value}.img"
         given = rt.data.get("image")
         firmware = rt.data.get("firmware")
+        if not given and not firmware and rt.data.get("auto_fetch"):
+            firmware = self._auto_fetch(rt)
         if firmware and not given:
             fw = Path(firmware).expanduser()
-            if not fw.is_file():
-                raise PreconditionError(f"firmware archive not found: {fw}")
-            if rt.profile.flash_backend is FlashBackend.FASTBOOT:
-                raise PreconditionError(
-                    "firmware archive extraction for fastboot devices is not available yet",
-                    hint="Extract boot.img or init_boot.img from the factory image, pass --image.",
-                )
             want = f"{target_of(rt).value}.img"
-            found = extract_ap(fw, rt.work / "firmware", names=(want, "vbmeta.img"))
+            found = extract_firmware(fw, (want, "vbmeta.img"), rt.work / "firmware")
             if want not in found:
                 raise PreconditionError(
                     f"{want} not found in {fw.name}",
                     hint=f"Archive contains: {', '.join(sorted(found))}. "
-                    "Use the AP tar for this build.",
+                    "Use the firmware package for the installed build.",
                 )
             shutil.copy2(found[want], dest)
             if "vbmeta.img" in found:
@@ -154,13 +160,42 @@ class AcquireImage(Step):
         info = inspect(dest)
         rt.say(f"stock image: {dest.name} header v{info.header_version} {info.size} bytes")
 
+    def _auto_fetch(self, rt: Runtime) -> str:
+        d = rt.device
+        if d.vendor is not Vendor.GOOGLE:
+            raise PreconditionError(
+                "automatic firmware download is only available for Google Pixel",
+                hint="Pass --firmware with the OTA or factory package for your build.",
+            )
+        rt.say(f"looking up factory image for {d.codename} {d.build_id}")
+        rt.say(f"source: {pixel_factory.FACTORY_PAGE}")
+        rt.say(
+            "Downloading means you accept Google's terms shown on that page. "
+            "The archive is about 2 to 3 GB."
+        )
+        if not rt.ctx.dry_run:
+            prompts.require(rt.ctx, "Download the factory image?")
+        with _http_client() as client:
+            html = pixel_factory.fetch_page(client)
+            image = pixel_factory.find_image(html, d.codename, d.build_id)
+            if image is None:
+                builds = pixel_factory.list_builds(html, d.codename)
+                raise PreconditionError(
+                    f"no factory image listed for {d.codename} build {d.build_id}",
+                    hint=f"listed builds: {', '.join(builds[-5:]) or 'none'}. Use --firmware.",
+                )
+            path = pixel_factory.download(client, image, cache_dir() / "factory")
+        return str(path)
+
 
 class BackupStock(Step):
     name = "backup_stock"
     title = "Back up stock image"
 
     def skip(self, rt: Runtime) -> str:
-        return "requested with --skip-backup" if rt.data.get("skip_backup") else ""
+        if rt.data.get("skip_backup"):
+            return "requested with --skip-backup"
+        return "" if rt.data.get("stock") else "no stock image acquired"
 
     def run(self, rt: Runtime) -> None:
         bm = BackupManager(rt.ctx.config.backup_dir)
@@ -396,6 +431,77 @@ class VerifyRoot(Step):
             )
 
 
+class FetchKernelSU(Step):
+    name = "fetch_kernelsu"
+    title = "Fetch KernelSU GKI kernel"
+
+    def check(self, rt: Runtime) -> None:
+        if rt.profile.flash_backend is not FlashBackend.FASTBOOT:
+            raise PreconditionError(
+                "KernelSU automated flow needs fastboot",
+                hint="Patch with the KernelSU app or flash a KernelSU boot image manually.",
+            )
+        if kernelsu.kmi_of(rt.device.kernel) is None:
+            raise PreconditionError(
+                f"kernel {rt.device.kernel or 'unknown'} is not a GKI kernel",
+                hint="\n".join(kernelsu.steps_manual()),
+            )
+
+    def run(self, rt: Runtime) -> None:
+        kmi = kernelsu.kmi_of(rt.device.kernel) or ""
+        with _http_client() as client:
+            rel = latest_release(client, kernelsu.REPO, cache_dir() / "github")
+            match = kernelsu.match_boot_asset(rel, kmi)
+            if match is None:
+                raise PreconditionError(
+                    f"KernelSU {rel.tag} has no prebuilt for KMI {kmi}",
+                    hint="\n".join(kernelsu.steps_manual()),
+                )
+            name, url = match
+            rt.say(f"KernelSU {rel.tag}: {name}")
+            gz = download_asset(client, url, cache_dir() / "kernelsu" / rel.tag / name)
+            manager = kernelsu.manager_apk(rel)
+            if manager:
+                apk_name, apk_url = manager
+                apk = download_asset(client, apk_url, cache_dir() / "kernelsu" / rel.tag / apk_name)
+                rt.data["apk"] = str(apk)
+        rt.work.mkdir(parents=True, exist_ok=True)
+        img = kernelsu.gunzip(gz, rt.work / "kernelsu_boot.img")
+        info = inspect(img)
+        if not info.is_boot:
+            raise PreconditionError(f"{name} did not unpack to a boot image")
+        rt.data["patched"] = str(img)
+        rt.data["target"] = PatchTarget.BOOT.value
+        rt.data["magisk_version"] = f"KernelSU {rel.tag}"
+
+
+class FetchAPatch(Step):
+    name = "fetch_apatch"
+    title = "Install APatch manager and stage stock image"
+    mutating = True
+
+    def run(self, rt: Runtime) -> None:
+        with _http_client() as client:
+            rel = latest_release(client, apatch.REPO, cache_dir() / "github")
+            manager = apatch.manager_apk(rel)
+            if not manager:
+                raise PreconditionError(f"APatch {rel.tag} has no manager APK asset")
+            apk_name, apk_url = manager
+            apk = download_asset(client, apk_url, cache_dir() / "apatch" / rel.tag / apk_name)
+        rt.data["apk"] = str(apk)
+        adb = rt.ctx.adb()
+        r = adb.install(apk)
+        if not r.ok:
+            log.warning("APatch install failed: %s", r.combined)
+        stock = rt.data.get("stock")
+        if stock:
+            adb.push(Path(stock), f"/sdcard/Download/stock_{target_of(rt).value}.img")
+            rt.say(f"stock image copied to Download/stock_{target_of(rt).value}.img")
+        rt.say(f"[bold]APatch {rel.tag} installed. Next steps:[/]")
+        for i, line in enumerate(apatch.steps(), 1):
+            rt.say(f"  {i}. {line}")
+
+
 class SkipInOdinMode(Step):
     """Mixin-like base: steps that cannot run when the user flashes with Odin."""
 
@@ -423,7 +529,32 @@ class VerifyRootAfterOdin(SkipInOdinMode, VerifyRoot):
         VerifyRoot.run(self, rt)
 
 
-def root_steps(profile: VendorProfile) -> list[Step]:
+def root_steps(profile: VendorProfile, method: str = "magisk") -> list[Step]:
+    if method == "kernelsu":
+        return [
+            CheckTools(),
+            CheckBattery(),
+            CheckUnlocked(),
+            AcquireImage(),
+            BackupStock(),
+            FetchKernelSU(),
+            TestBoot(),
+            FlashImage(),
+            WaitBoot(),
+            InstallApp(),
+            VerifyRoot(),
+        ]
+    if method == "apatch":
+        return [
+            CheckTools(),
+            CheckBattery(),
+            CheckUnlocked(),
+            AcquireImage(),
+            BackupStock(),
+            FetchAPatch(),
+        ]
+    if method != "magisk":
+        raise PreconditionError(f"unknown method {method}", hint="magisk, kernelsu or apatch")
     if profile.flash_backend is FlashBackend.FASTBOOT:
         return [
             CheckTools(),

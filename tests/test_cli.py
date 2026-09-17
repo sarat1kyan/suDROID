@@ -28,6 +28,7 @@ def _device(fk: FakeRunner, name: str, serial: str = "ABC", byname: str = "boot_
     fk.on_prefix(("adb", "-s", serial, "shell", "ls /dev/block/by-name"), byname)
     fk.on_prefix(("adb", "-s", serial, "shell", "command -v"), "no")
     fk.on(("adb", "-s", serial, "shell", "dumpsys battery"), "  level: 64\n")
+    fk.on(("adb", "-s", serial, "shell", "uname -r"), "5.10.157-android13-4-g1234")
 
 
 def test_version() -> None:

@@ -56,6 +56,7 @@ class RawInfo:
     fastboot_vars: Mapping[str, str] = field(default_factory=dict)
     which: Mapping[str, bool] = field(default_factory=dict)
     battery: int | None = None
+    kernel: str = ""
 
 
 @dataclass(frozen=True)
@@ -89,6 +90,7 @@ class Device:
     kg_locked: bool = False
     init_boot_inferred: bool = False
     abi: str = ""
+    kernel: str = ""
 
     @property
     def slot_suffix(self) -> str:

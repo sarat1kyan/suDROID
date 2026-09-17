@@ -145,9 +145,9 @@ def test_root_resume_skips_done_steps(tmp_path: Path, monkeypatch: pytest.Monkey
     assert "resuming session" in r.output
 
 
-def test_root_apatch_method_redirects(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_root_unknown_method(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     dev = FakeDevice("oneplus9")
     install(monkeypatch, tmp_path, dev)
-    r = runner.invoke(cli.app, ["root", "--method", "apatch"])
+    r = runner.invoke(cli.app, ["root", "--method", "supersu"])
     assert r.exit_code == 20
-    assert "sudroid flash" in r.output
+    assert "kernelsu" in r.output

@@ -207,4 +207,5 @@ def detect(raw: RawInfo) -> Device:
         kg_locked=p.get("ro.boot.other.locked").strip() == "1",
         init_boot_inferred=init_boot_inferred,
         abi=p.first("ro.product.cpu.abi", "ro.product.cpu.abilist64").split(",")[0],
+        kernel=raw.kernel,
     )
