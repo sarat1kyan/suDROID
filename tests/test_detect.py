@@ -11,7 +11,7 @@ def raw(name: str, **kw: object) -> RawInfo:
 
 
 def test_pixel7() -> None:
-    d = detect(raw("pixel7"))
+    d = detect(raw("pixel7", byname=frozenset({"boot_a", "boot_b", "init_boot_a", "init_boot_b"})))
     assert d.vendor is Vendor.GOOGLE
     assert d.soc is SocVendor.TENSOR
     assert d.ab and d.slot == "a"
@@ -21,6 +21,7 @@ def test_pixel7() -> None:
     assert d.oem_unlock_allowed is True
     assert d.codename == "panther"
     assert d.slot_suffix == "_a"
+    assert d.init_boot_inferred is False
 
 
 def test_pixel5_boot_target_locked() -> None:
@@ -47,7 +48,35 @@ def test_s23() -> None:
     assert d.slot == ""
     assert d.ab  # ab_update true without slot suffix prop
     assert d.patch_target is PatchTarget.INIT_BOOT
+    assert d.init_boot_inferred is True
     assert d.lock is LockState.LOCKED
+
+
+def test_s23_byname_authoritative() -> None:
+    d = detect(raw("s23", byname=frozenset({"boot", "init_boot", "vbmeta"})))
+    assert d.has_init_boot and not d.init_boot_inferred
+    d2 = detect(raw("s23", byname=frozenset({"boot", "vbmeta"})))
+    assert not d2.has_init_boot
+    assert d2.patch_target is PatchTarget.BOOT
+
+
+def test_api33_device_without_init_boot_listing() -> None:
+    p = Props.parse(
+        "[ro.product.manufacturer]: [Infinix]\n[ro.product.first_api_level]: [33]\n"
+        "[ro.build.version.sdk]: [33]\n"
+    )
+    guessed = detect(RawInfo(props=p))
+    assert guessed.has_init_boot and guessed.init_boot_inferred
+    listed = detect(RawInfo(props=p, byname=frozenset({"boot_a", "boot_b"})))
+    assert not listed.has_init_boot and not listed.init_boot_inferred
+
+
+def test_fastboot_vars_decide_init_boot_when_no_byname() -> None:
+    p = Props.parse("[ro.product.first_api_level]: [30]\n")
+    d = detect(RawInfo(props=p, fastboot_vars={"has-slot:init_boot": "yes"}))
+    assert d.has_init_boot and not d.init_boot_inferred
+    d2 = detect(RawInfo(props=p, fastboot_vars={"has-slot:init_boot": "no"}))
+    assert not d2.has_init_boot
 
 
 def test_mi11() -> None:

@@ -68,6 +68,16 @@ def test_download_and_ensure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         assert path.stat().st_mode & stat.S_IXUSR
 
 
+def test_download_rejects_sibling_prefix(tmp_path: Path) -> None:
+    (tmp_path / "c").mkdir()
+    payload = _zip_with(["../c-evil/x"])
+    client = httpx.Client(
+        transport=httpx.MockTransport(lambda r: httpx.Response(200, content=payload))
+    )
+    with pytest.raises(ToolMissingError):
+        pt.download_platform_tools(client, tmp_path / "c", url="https://example.invalid/x.zip")
+
+
 def test_download_rejects_path_traversal(tmp_path: Path) -> None:
     payload = _zip_with(["../evil"])
     client = httpx.Client(

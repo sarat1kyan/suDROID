@@ -109,9 +109,10 @@ def download_platform_tools(client: httpx.Client, dest: Path, url: str | None = 
                 tmp.write(chunk)
     try:
         with zipfile.ZipFile(tmp_path) as zf:
+            root = dest.resolve()
             for info in zf.infolist():
                 target = (dest / info.filename).resolve()
-                if not str(target).startswith(str(dest.resolve())):
+                if root != target and root not in target.parents:
                     raise ToolMissingError(f"unsafe path in archive: {info.filename}")
             zf.extractall(dest)
             if host_os() != "windows":

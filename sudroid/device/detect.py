@@ -145,13 +145,21 @@ def detect(raw: RawInfo) -> Device:
     first_api = p.get_int("ro.product.first_api_level", 0) or 0
     sdk = p.get_int("ro.build.version.sdk", 0) or 0
 
-    has_init_boot = (
-        "init_boot" in byname
-        or "init_boot_a" in byname
-        or _yes(fb.get("has-slot:init_boot", ""))
-        or "partition-type:init_boot" in fb
-        or first_api >= 33
+    init_boot_inferred = False
+    fb_knows_init_boot = "has-slot:init_boot" in fb or any(
+        k.startswith("partition-type:init_boot") for k in fb
     )
+    if byname:
+        has_init_boot = "init_boot" in byname or "init_boot_a" in byname
+    elif fb_knows_init_boot:
+        has_init_boot = _yes(fb.get("has-slot:init_boot", "")) or any(
+            k.startswith("partition-type:init_boot") for k in fb
+        )
+    else:
+        # No partition listing available. Android 13 launch devices on GKI ship
+        # init_boot; treat as a guess that the flash step must confirm via fastboot.
+        has_init_boot = first_api >= 33
+        init_boot_inferred = has_init_boot
     has_vendor_boot = (
         "vendor_boot" in byname
         or "vendor_boot_a" in byname
@@ -197,4 +205,6 @@ def detect(raw: RawInfo) -> Device:
         battery=raw.battery,
         warranty_bit=p.get("ro.boot.warranty_bit").strip(),
         kg_locked=p.get("ro.boot.other.locked").strip() == "1",
+        init_boot_inferred=init_boot_inferred,
+        abi=p.first("ro.product.cpu.abi", "ro.product.cpu.abilist64").split(",")[0],
     )

@@ -22,10 +22,10 @@ def fake(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> FakeRunner:
     return fk
 
 
-def _device(fk: FakeRunner, name: str, serial: str = "ABC") -> None:
+def _device(fk: FakeRunner, name: str, serial: str = "ABC", byname: str = "boot_a boot_b") -> None:
     fk.on(("/fake/adb", "devices"), f"List of devices attached\n{serial}\tdevice\n")
     fk.on(("/fake/adb", "-s", serial, "shell", "getprop"), getprop_text(name))
-    fk.on_prefix(("/fake/adb", "-s", serial, "shell", "ls /dev/block/by-name"), "boot_a boot_b")
+    fk.on_prefix(("/fake/adb", "-s", serial, "shell", "ls /dev/block/by-name"), byname)
     fk.on_prefix(("/fake/adb", "-s", serial, "shell", "command -v"), "no")
     fk.on(("/fake/adb", "-s", serial, "shell", "dumpsys battery"), "  level: 64\n")
 
@@ -62,7 +62,7 @@ def test_profiles_json(fake: FakeRunner) -> None:
 
 
 def test_info_json_pixel7(fake: FakeRunner) -> None:
-    _device(fake, "pixel7")
+    _device(fake, "pixel7", byname="boot_a boot_b init_boot_a init_boot_b")
     r = runner.invoke(cli.app, ["--json", "info"])
     assert r.exit_code == 0, r.output
     data = json.loads(r.stdout)

@@ -25,3 +25,4 @@
 [ro.soc.manufacturer]: [QTI]
 [ro.soc.model]: [SM8550]
 [sys.oem_unlock_allowed]: [0]
+[ro.product.cpu.abi]: [arm64-v8a]

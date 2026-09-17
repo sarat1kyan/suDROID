@@ -21,3 +21,4 @@
 [ro.serialno]: [QV7123ABCD]
 [ro.soc.model]: [SM8150]
 [sys.oem_unlock_allowed]: [1]
+[ro.product.cpu.abi]: [arm64-v8a]

@@ -71,6 +71,15 @@ def soc_quirks(d: Device) -> list[Quirk]:
                 "https://github.com/TomKing062/CVE-2022-38694_unlock_bootloader",
             )
         )
+    if d.init_boot_inferred:
+        out.append(
+            Quirk(
+                "init-boot-inferred",
+                "init_boot presence guessed from launch API level; partition listing was not "
+                "readable. The flash step re-checks with fastboot getvar before writing.",
+                "warn",
+            )
+        )
     if d.dynamic_partitions is False and d.sdk >= 29:
         out.append(Quirk("no-dynparts", "No dynamic partitions reported; older layout."))
     return out

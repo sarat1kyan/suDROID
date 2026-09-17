@@ -19,6 +19,4 @@ class NothingProfile(VendorProfile):
         return [["flashing", "unlock"]]
 
     def patch_target(self, d: Device) -> PatchTarget:
-        if d.first_api_level >= 33 or d.has_init_boot:
-            return PatchTarget.INIT_BOOT
-        return PatchTarget.BOOT
+        return PatchTarget.INIT_BOOT if d.has_init_boot else PatchTarget.BOOT

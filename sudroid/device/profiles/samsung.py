@@ -26,9 +26,7 @@ class SamsungProfile(VendorProfile):
         return []
 
     def patch_target(self, d: Device) -> PatchTarget:
-        if d.first_api_level >= 33 or d.has_init_boot:
-            return PatchTarget.INIT_BOOT
-        return PatchTarget.BOOT
+        return PatchTarget.INIT_BOOT if d.has_init_boot else PatchTarget.BOOT
 
     def flash_partition(self, d: Device, target: PatchTarget) -> str:
         # Heimdall uses PIT partition names, upper case, no slot suffix.

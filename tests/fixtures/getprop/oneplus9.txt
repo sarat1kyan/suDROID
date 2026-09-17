@@ -23,3 +23,4 @@
 [ro.soc.manufacturer]: [QTI]
 [ro.soc.model]: [SM8350]
 [sys.oem_unlock_allowed]: [1]
+[ro.product.cpu.abi]: [arm64-v8a]

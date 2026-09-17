@@ -76,7 +76,9 @@ class AdbClient:
         return frozenset(name.strip() for name in r.text.split() if name.strip())
 
     def which(self, name: str) -> bool:
-        r = self.shell(f"command -v {shlex.quote(name)} >/dev/null 2>&1 && echo yes || echo no")
+        r = self.shell(
+            f"command -v {shlex.quote(name)} >/dev/null 2>&1 && echo yes || echo no", timeout=15
+        )
         return r.text.strip().endswith("yes")
 
     def battery_level(self) -> int | None:

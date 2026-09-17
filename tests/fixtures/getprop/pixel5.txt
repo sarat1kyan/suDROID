@@ -25,3 +25,4 @@
 [ro.soc.manufacturer]: [Qualcomm]
 [ro.soc.model]: [SM7250]
 [sys.oem_unlock_allowed]: [0]
+[ro.product.cpu.abi]: [arm64-v8a]

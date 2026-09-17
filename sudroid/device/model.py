@@ -87,6 +87,8 @@ class Device:
     battery: int | None
     warranty_bit: str = ""
     kg_locked: bool = False
+    init_boot_inferred: bool = False
+    abi: str = ""
 
     @property
     def slot_suffix(self) -> str:

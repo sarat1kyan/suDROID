@@ -22,10 +22,8 @@ class GoogleProfile(VendorProfile):
         return [["flashing", "unlock"]]
 
     def patch_target(self, d: Device) -> PatchTarget:
-        # Pixel 7 and later ship a GKI boot without ramdisk; Magisk goes to init_boot.
-        if d.first_api_level >= 33 or d.has_init_boot:
-            return PatchTarget.INIT_BOOT
-        return PatchTarget.BOOT
+        # Pixel 7 and later (first API 33) ship init_boot; Magisk goes there.
+        return PatchTarget.INIT_BOOT if d.has_init_boot else PatchTarget.BOOT
 
     def quirks(self, d: Device) -> list[Quirk]:
         q = super().quirks(d)
