@@ -50,7 +50,7 @@ def gunzip(src: Path, dest: Path) -> Path:
 def steps_manual() -> list[str]:
     return [
         "Non GKI kernel: KernelSU needs a kernel built with KernelSU for this exact device",
-        "Find a KernelSU kernel for your model on the KernelSU site or XDA, download the boot image",
+        "Find a KernelSU kernel for your model on the KernelSU site or XDA, get the boot image",
         "Run: sudroid flash <kernelsu_boot.img> --partition boot --test-boot",
         "Install the KernelSU manager APK, confirm with `sudroid verify`",
     ]

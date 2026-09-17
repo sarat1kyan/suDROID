@@ -22,6 +22,7 @@ def device_table(d: Device, profile: VendorProfile) -> Table:
         ("Build", d.build_id),
         ("Security patch", d.security_patch),
         ("SoC", f"{d.soc.value} {d.soc_model}".strip()),
+        ("Kernel", d.kernel or "unknown"),
         ("A/B", f"yes, slot {d.slot or '?'}" if d.ab else "no"),
         ("Patch target", profile.patch_target(d).value),
         ("init_boot", "yes" if d.has_init_boot else "no"),

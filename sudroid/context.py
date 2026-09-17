@@ -94,7 +94,8 @@ def gather(ctx: AppContext) -> RawInfo:
     byname = adb.list_byname()
     which = {name: adb.which(name) for name in ("magisk", "ksud", "apd", "su")}
     battery = adb.battery_level()
-    return RawInfo(props=props, byname=byname, which=which, battery=battery)
+    kernel = adb.shell("uname -r", timeout=15).text.strip()
+    return RawInfo(props=props, byname=byname, which=which, battery=battery, kernel=kernel)
 
 
 def gather_fastboot(ctx: AppContext) -> RawInfo:

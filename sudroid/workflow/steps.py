@@ -10,15 +10,17 @@ from pathlib import Path
 import httpx
 
 from sudroid.backup.manager import BackupManager
-from sudroid.device.model import FlashBackend, PatchTarget
+from sudroid.device.model import FlashBackend, PatchTarget, Vendor
 from sudroid.device.profiles.base import VendorProfile
 from sudroid.errors import FlashError, PreconditionError
-from sudroid.images.samsung import extract_ap
+from sudroid.images import pixel_factory
+from sudroid.images.sources import extract_firmware
 from sudroid.images.verify import inspect
 from sudroid.paths import cache_dir
 from sudroid.root import releases
 from sudroid.root.apk import MagiskBundle, extract_bundle
 from sudroid.root.device_patch import DevicePatcher, PatchOptions
+from sudroid.ui import prompts
 from sudroid.workflow.engine import Runtime, Step
 
 log = logging.getLogger(__name__)
@@ -95,22 +97,17 @@ class AcquireImage(Step):
         dest = rt.work / f"stock_{target_of(rt).value}.img"
         given = rt.data.get("image")
         firmware = rt.data.get("firmware")
+        if not given and not firmware and rt.data.get("auto_fetch"):
+            firmware = self._auto_fetch(rt)
         if firmware and not given:
             fw = Path(firmware).expanduser()
-            if not fw.is_file():
-                raise PreconditionError(f"firmware archive not found: {fw}")
-            if rt.profile.flash_backend is FlashBackend.FASTBOOT:
-                raise PreconditionError(
-                    "firmware archive extraction for fastboot devices is not available yet",
-                    hint="Extract boot.img or init_boot.img from the factory image, pass --image.",
-                )
             want = f"{target_of(rt).value}.img"
-            found = extract_ap(fw, rt.work / "firmware", names=(want, "vbmeta.img"))
+            found = extract_firmware(fw, (want, "vbmeta.img"), rt.work / "firmware")
             if want not in found:
                 raise PreconditionError(
                     f"{want} not found in {fw.name}",
                     hint=f"Archive contains: {', '.join(sorted(found))}. "
-                    "Use the AP tar for this build.",
+                    "Use the firmware package for the installed build.",
                 )
             shutil.copy2(found[want], dest)
             if "vbmeta.img" in found:
@@ -153,6 +150,33 @@ class AcquireImage(Step):
         rt.data["stock"] = str(dest)
         info = inspect(dest)
         rt.say(f"stock image: {dest.name} header v{info.header_version} {info.size} bytes")
+
+    def _auto_fetch(self, rt: Runtime) -> str:
+        d = rt.device
+        if d.vendor is not Vendor.GOOGLE:
+            raise PreconditionError(
+                "automatic firmware download is only available for Google Pixel",
+                hint="Pass --firmware with the OTA or factory package for your build.",
+            )
+        rt.say(f"looking up factory image for {d.codename} {d.build_id}")
+        rt.say(f"source: {pixel_factory.FACTORY_PAGE}")
+        rt.say(
+            "Downloading means you accept Google's terms shown on that page. "
+            "The archive is about 2 to 3 GB."
+        )
+        if not rt.ctx.dry_run:
+            prompts.require(rt.ctx, "Download the factory image?")
+        with _http_client() as client:
+            html = pixel_factory.fetch_page(client)
+            image = pixel_factory.find_image(html, d.codename, d.build_id)
+            if image is None:
+                builds = pixel_factory.list_builds(html, d.codename)
+                raise PreconditionError(
+                    f"no factory image listed for {d.codename} build {d.build_id}",
+                    hint=f"listed builds: {', '.join(builds[-5:]) or 'none'}. Use --firmware.",
+                )
+            path = pixel_factory.download(client, image, cache_dir() / "factory")
+        return str(path)
 
 
 class BackupStock(Step):
