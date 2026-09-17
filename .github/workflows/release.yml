@@ -45,7 +45,7 @@ jobs:
           - os: ubuntu-24.04-arm
             target: linux-arm64
             ext: ""
-          - os: macos-13
+          - os: macos-15-intel
             target: macos-x86_64
             ext: ""
           - os: macos-latest
