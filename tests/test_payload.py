@@ -84,3 +84,30 @@ def test_extract_from_zip_and_file(tmp_path: Path) -> None:
     assert out2["boot.img"].read_bytes() == padded(BOOT)
     with pytest.raises(PayloadError):
         extract_from_zip(z, ["vendor_boot.img"], tmp_path / "o3")
+
+
+def test_extract_from_deflated_zip(tmp_path: Path) -> None:
+    import zipfile
+
+    b = PayloadBuilder()
+    b.add("boot", BOOT)
+    z = tmp_path / "ota_deflated.zip"
+    with zipfile.ZipFile(z, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("payload.bin", b.build())
+    out = extract_from_zip(z, ["boot"], tmp_path / "o")
+    assert out["boot.img"].read_bytes() == padded(BOOT)
+    assert not (tmp_path / "o" / "payload.bin").exists()
+
+
+def test_oversized_op_rejected(tmp_path: Path) -> None:
+    from sudroid.images import payload as pl
+
+    b = PayloadBuilder()
+    b.add("boot", BOOT)
+    p = open_payload(as_io(b.build()))
+    op = p.partitions["boot"].ops[0]
+    p.partitions["boot"].ops[0] = pl.Operation(
+        op.type, op.data_offset, pl.MAX_OP_DATA + 1, op.dst_extents, op.sha256
+    )
+    with pytest.raises(PayloadError):
+        extract(p, "boot", tmp_path / "x.img")

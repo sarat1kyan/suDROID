@@ -85,7 +85,9 @@ def download(client: httpx.Client, image: FactoryImage, cache: Path) -> Path:
             for chunk in r.iter_bytes(1 << 20):
                 fh.write(chunk)
                 digest.update(chunk)
-    if image.sha256 and digest.hexdigest() != image.sha256:
+    if not image.sha256:
+        log.warning("no sha256 listed for %s; download is unverified", image.filename)
+    elif digest.hexdigest() != image.sha256:
         tmp.unlink(missing_ok=True)
         raise PreconditionError(
             f"sha256 mismatch for {image.filename}", hint="Download again or use --firmware."

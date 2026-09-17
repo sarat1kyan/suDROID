@@ -23,6 +23,7 @@ from sudroid.errors import PreconditionError
 log = logging.getLogger(__name__)
 
 MAGIC = b"CrAU"
+MAX_OP_DATA = 1 << 30  # 1 GiB per operation blob
 OP_REPLACE = 0
 OP_REPLACE_BZ = 1
 OP_ZERO = 6
@@ -232,6 +233,8 @@ def extract(payload: Payload, name: str, out: Path) -> Path:
         for op in part.ops:
             if op.type == OP_ZERO:
                 continue
+            if op.data_length > MAX_OP_DATA:
+                raise PayloadError(f"operation in {name} claims {op.data_length} bytes; refusing")
             payload.source.seek(payload.data_offset + op.data_offset)
             blob = payload.source.read(op.data_length)
             if len(blob) != op.data_length:
@@ -271,6 +274,19 @@ def extract_from_zip(zip_path: Path, names: Iterable[str], dest: Path) -> dict[s
             info = zf.getinfo("payload.bin")
         except KeyError:
             raise PayloadError(f"{zip_path.name} has no payload.bin") from None
+        if info.compress_type != zipfile.ZIP_STORED:
+            # Seeking inside a deflated entry re-inflates from the start on every seek.
+            # Extract once to a temp file next to the destination instead.
+            log.info("payload.bin is compressed in the zip, extracting first")
+            dest.mkdir(parents=True, exist_ok=True)
+            tmp = dest / "payload.bin"
+            with zf.open(info) as src, tmp.open("wb") as out:
+                for chunk in iter(lambda: src.read(1 << 20), b""):
+                    out.write(chunk)
+            try:
+                return extract_from_file(tmp, names, dest)
+            finally:
+                tmp.unlink(missing_ok=True)
         with zf.open(info) as fh:
             payload = open_payload(fh)  # type: ignore[arg-type]
             return _extract_many(payload, names, dest)
